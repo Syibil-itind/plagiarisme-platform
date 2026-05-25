@@ -164,7 +164,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-slate-800 dark:text-slate-100 transition-colors">
       
       {/* KIRI: DAFTAR KELAS & FORM INPUT */}
       <div className="lg:col-span-1 space-y-6">
@@ -172,9 +172,9 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
         {/* PANEL INPUT SESUAI PERAN */}
         {user.role === 'dosen' ? (
           // Form Buat Kelas (Dosen)
-          <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
-              <span className="w-2 h-2 bg-indigo-600 rounded-full"></span>
+          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl dark:shadow-2xl space-y-4 transition-colors">
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-gold rounded-full"></span>
               Buat Kelas Baru
             </h3>
             <form onSubmit={handleCreateClass} className="space-y-3">
@@ -184,19 +184,19 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                 value={newClassName}
                 onChange={(e) => setNewClassName(e.target.value)}
                 placeholder="Nama Kelas (misal: Proyek TI A)"
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-650 transition-all"
               />
               <textarea
                 value={newClassDesc}
                 onChange={(e) => setNewClassDesc(e.target.value)}
                 placeholder="Deskripsi Kelas (opsional)"
                 rows={2}
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-650 transition-all"
               />
               <button
                 type="submit"
                 disabled={creatingClass}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl disabled:opacity-50 transition-colors"
+                className="w-full py-3 bg-gold hover:bg-gold-hover text-charcoal text-xs font-black rounded-xl disabled:opacity-50 transition-all shadow-md shadow-gold/10 cursor-pointer"
               >
                 {creatingClass ? "Memproses..." : "Terbitkan Kelas"}
               </button>
@@ -204,9 +204,9 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
           </div>
         ) : (
           // Form Join Kelas (Mahasiswa)
-          <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
-              <span className="w-2 h-2 bg-indigo-600 rounded-full"></span>
+          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl dark:shadow-2xl space-y-4 transition-colors">
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-gold rounded-full"></span>
               Gabung Kelas Baru
             </h3>
             <form onSubmit={handleJoinClass} className="space-y-3">
@@ -217,12 +217,12 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
                 placeholder="Masukkan 6-Digit Kode Kelas"
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-center font-bold tracking-widest font-mono"
+                className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold text-center font-bold tracking-widest font-mono bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all"
               />
               <button
                 type="submit"
                 disabled={joiningClass}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl disabled:opacity-50 transition-colors shadow-sm shadow-indigo-600/10"
+                className="w-full py-3 bg-gold hover:bg-gold-hover text-charcoal text-xs font-black rounded-xl disabled:opacity-50 transition-all shadow-md shadow-gold/10 cursor-pointer"
               >
                 {joiningClass ? "Menghubungkan..." : "Masuk ke Kelas"}
               </button>
@@ -232,12 +232,12 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
         {/* DAFTAR KELAS AKTIF */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Kelas Anda</h4>
+          <h4 className="text-xs font-bold text-slate-550 dark:text-slate-500 uppercase tracking-wider">Daftar Kelas Anda</h4>
           
           {loading ? (
-            <p className="text-xs text-slate-400">Memuat kelas...</p>
+            <p className="text-xs text-slate-500 animate-pulse">Memuat kelas...</p>
           ) : classes.length === 0 ? (
-            <div className="p-6 bg-white border border-slate-200/80 rounded-2xl text-center text-xs text-slate-400">
+            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center text-xs text-slate-550 dark:text-slate-500 shadow-xl dark:shadow-2xl transition-colors">
               Belum ada kelas terdaftar.
             </div>
           ) : (
@@ -248,21 +248,21 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                   onClick={() => handleSelectClass(cls)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                     activeClass && activeClass.id === cls.id
-                      ? "bg-slate-900 text-white border-slate-950 shadow-md"
-                      : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50/50"
+                      ? "bg-slate-900 dark:bg-slate-900 text-white border-slate-950 dark:border-gold shadow-lg shadow-gold/5"
+                      : "bg-white dark:bg-slate-900/60 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/50"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h5 className="text-xs font-extrabold truncate max-w-[70%]">{cls.name}</h5>
                     <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                      activeClass && activeClass.id === cls.id ? "bg-slate-800 text-indigo-400" : "bg-slate-100 text-slate-600"
+                      activeClass && activeClass.id === cls.id ? "bg-gold text-charcoal font-black" : "bg-slate-100 dark:bg-slate-955 text-slate-650 dark:text-slate-500 border border-slate-200 dark:border-slate-800"
                     }`}>
                       {cls.code}
                     </span>
                   </div>
                   {cls.description && (
                     <p className={`text-[10px] mt-1 line-clamp-1 ${
-                      activeClass && activeClass.id === cls.id ? "text-slate-400" : "text-slate-500"
+                      activeClass && activeClass.id === cls.id ? "text-slate-400" : "text-slate-550 dark:text-slate-500"
                     }`}>
                       {cls.description}
                     </p>
@@ -279,24 +279,24 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
       <div className="lg:col-span-2 space-y-6">
         
         {activeClass ? (
-          <div className="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-xl shadow-slate-100/10 space-y-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-xl dark:shadow-2xl space-y-6 transition-colors">
             
             {/* Header Detail Kelas */}
-            <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-md font-extrabold text-slate-950">{activeClass.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{activeClass.description || "Tidak ada deskripsi."}</p>
+                <h3 className="text-md font-extrabold text-slate-900 dark:text-white">{activeClass.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{activeClass.description || "Tidak ada deskripsi."}</p>
               </div>
-              <span className="text-[10px] font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="text-[10px] font-extrabold text-gold bg-gold/10 border border-gold/25 px-3 py-1 rounded-full uppercase tracking-wider">
                 Kode Kelas: {activeClass.code}
               </span>
             </div>
 
             {/* FORM BUAT TUGAS BARU (KHUSUS DOSEN) */}
             {user.role === 'dosen' && (
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
-                <h4 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4 transition-colors">
+                <h4 className="text-xs font-extrabold text-slate-850 dark:text-slate-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-gold rounded-full"></span>
                   Buat Sesi Tugas Baru
                 </h4>
                 <form onSubmit={handleCreateAssignment} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -306,19 +306,19 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                     value={newAssignTitle}
                     onChange={(e) => setNewAssignTitle(e.target.value)}
                     placeholder="Judul Tugas (misal: Makalah AI)"
-                    className="w-full p-3 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15"
+                    className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl text-xs bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold placeholder-slate-400 dark:placeholder-slate-600 transition-all"
                   />
                   <input
                     type="datetime-local"
                     required
                     value={newAssignDueDate}
                     onChange={(e) => setNewAssignDueDate(e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15 text-slate-500 font-medium"
+                    className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl text-xs bg-white dark:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold text-slate-500 dark:text-slate-400 font-medium transition-all"
                   />
                   <button
                     type="submit"
                     disabled={creatingAssign}
-                    className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+                    className="w-full py-3 bg-gold hover:bg-gold-hover text-charcoal text-xs font-black rounded-xl transition-all shadow-md shadow-gold/10 cursor-pointer disabled:opacity-50"
                   >
                     {creatingAssign ? "Menerbitkan..." : "Terbitkan Tugas"}
                   </button>
@@ -328,12 +328,12 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
             {/* DAFTAR TUGAS AKTIF DI KELAS INI */}
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sesi Pengumpulan Tugas</h4>
+              <h4 className="text-xs font-bold text-slate-550 dark:text-slate-500 uppercase tracking-wider">Sesi Pengumpulan Tugas</h4>
               
               {loadingAssignments ? (
-                <p className="text-xs text-slate-400">Memuat daftar tugas...</p>
+                <p className="text-xs text-slate-500 animate-pulse">Memuat daftar tugas...</p>
               ) : assignments.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-6">Belum ada sesi tugas diterbitkan untuk kelas ini.</p>
+                <p className="text-xs text-slate-500 text-center py-6">Belum ada sesi tugas diterbitkan untuk kelas ini.</p>
               ) : (
                 <div className="space-y-3">
                   {assignments.map((assign) => {
@@ -341,14 +341,14 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                     return (
                       <div
                         key={assign.id}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl hover:bg-slate-50 transition-colors gap-3"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-850/30 transition-all gap-3"
                       >
                         <div className="space-y-1">
-                          <h5 className="text-xs font-extrabold text-slate-800">{assign.title}</h5>
+                          <h5 className="text-xs font-extrabold text-slate-850 dark:text-slate-200">{assign.title}</h5>
                           <div className="flex items-center space-x-2 text-[10px] text-slate-500">
                             <span>Dibuat: {new Date(assign.created_at).toLocaleDateString('id-ID')}</span>
                             <span>•</span>
-                            <span className={isOverdue ? "text-rose-500 font-bold" : "text-amber-600 font-medium"}>
+                            <span className={isOverdue ? "text-rose-500 dark:text-rose-400 font-bold" : "text-gold font-medium"}>
                               Tenggat: {new Date(assign.due_date).toLocaleString('id-ID')}
                             </span>
                           </div>
@@ -357,7 +357,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
                         {/* Tombol aksi unggah/analisis */}
                         <button
                           onClick={() => onSelectAssignment(assign.id, activeClass.id, assign.title)}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-indigo-600/10 self-start sm:self-center"
+                          className="px-4 py-2 bg-gold hover:bg-gold-hover text-charcoal text-xs font-black rounded-xl transition-all shadow-md shadow-gold/10 self-start sm:self-center cursor-pointer"
                         >
                           {user.role === 'dosen' ? "Analisis Plagiarisme" : "Unggah Tugas"}
                         </button>
@@ -370,15 +370,15 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
           </div>
         ) : (
-          <div className="bg-white border border-slate-200/80 p-8 rounded-3xl shadow-xl shadow-slate-100/10 flex flex-col items-center justify-center text-center space-y-3 py-16">
-            <div className="p-3 bg-slate-50 text-slate-400 rounded-full border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-xl dark:shadow-2xl flex flex-col items-center justify-center text-center space-y-3 py-16 transition-colors">
+            <div className="p-3 bg-slate-105 dark:bg-slate-950 text-gold rounded-full border border-slate-200 dark:border-slate-800 shadow-inner">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
               </svg>
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-extrabold text-slate-900">Belum Ada Kelas Terpilih</h4>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">Belum Ada Kelas Terpilih</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                 Silakan pilih salah satu kelas di sebelah kiri untuk melihat sesi tugas atau menerbitkan tugas baru.
               </p>
             </div>

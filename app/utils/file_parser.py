@@ -93,3 +93,26 @@ def parse_file(file_storage) -> list:
         return extract_texts_from_zip(file_bytes)
     else:
         raise ValueError(f"Tipe file .{ext} tidak didukung! Gunakan .txt, .pdf, .docx, atau .zip")
+
+
+def parse_file_from_bytes(file_bytes_data: bytes, filename: str) -> list:
+    """
+    Mendeteksi ekstensi file dari data bytes mentah dan nama filenya,
+    melakukan parsing, dan mengembalikan daftar berkas teks.
+    """
+    ext = filename.split('.')[-1].lower()
+    file_bytes = io.BytesIO(file_bytes_data)
+    
+    if ext == 'txt':
+        text = file_bytes.getvalue().decode('utf-8', errors='ignore')
+        return [{"filename": filename, "text": text.strip()}]
+    elif ext == 'pdf':
+        text = extract_text_from_pdf(file_bytes)
+        return [{"filename": filename, "text": text}]
+    elif ext == 'docx':
+        text = extract_text_from_docx(file_bytes)
+        return [{"filename": filename, "text": text}]
+    elif ext == 'zip':
+        return extract_texts_from_zip(file_bytes)
+    else:
+        raise ValueError(f"Tipe file .{ext} tidak didukung! Gunakan .txt, .pdf, .docx, atau .zip")

@@ -46,16 +46,16 @@ class PlagiarismDetector:
 
     # Fungsi untuk menghitung kemiripan kata secara leksikal menggunakan skema TF-IDF dan Cosine Similarity
     def calculate_tfidf_similarity(self, preprocessed_docs):
-        # Menginisialisasi objek TfidfVectorizer untuk merepresentasikan kata-kata unik sebagai dimensi fitur
-        vectorizer = TfidfVectorizer()
-        # Mentransformasikan dokumen teks ter-preprocess menjadi representasi matriks bobot TF-IDF angka numerik
-        tfidf_matrix = vectorizer.fit_transform(preprocessed_docs)
-        # Menghitung kecocokan sudut (cosine similarity) berpasangan di antara semua baris matriks TF-IDF
-        similarity_matrix = cosine_similarity(tfidf_matrix)
-        # Mengubah skala desimal [0.0, 1.0] ke persentase [0.0, 100.0] dan melakukan pembatasan (clipping)
-        similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
-        # Mengonversi matriks hasil kalkulasi numpy ke dalam bentuk list bertingkat agar aman dikonversi ke JSON
-        return similarity_matrix.tolist()
+        try:
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(preprocessed_docs)
+            similarity_matrix = cosine_similarity(tfidf_matrix)
+            similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
+            return similarity_matrix.tolist()
+        except ValueError:
+            # Fallback jika dokumen kosong atau hanya berisi stopword yang terhapus seluruhnya
+            n = len(preprocessed_docs)
+            return np.zeros((n, n)).tolist()
 
     # Fungsi untuk menghitung kemiripan dokumen berdasarkan pemahaman konteks makna kalimat (Semantik)
     def calculate_semantic_similarity(self):

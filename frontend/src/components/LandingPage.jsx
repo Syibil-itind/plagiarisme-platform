@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function LandingPage({ theme, onSelectPortal }) {
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-charcoal text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-gold selection:text-charcoal transition-colors duration-200">
       
@@ -15,25 +17,12 @@ export default function LandingPage({ theme, onSelectPortal }) {
               </svg>
             </div>
             <div className="space-y-0.5">
-              <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white block">SYBIL-ITIND</span>
+              <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white block">PlagiarisMe</span>
               <span className="text-[10px] text-gold font-bold uppercase tracking-widest block">Academic Integrity</span>
             </div>
           </div>
 
-          <nav className="flex items-center space-x-3 pr-12 md:pr-16">
-            <button
-              onClick={() => onSelectPortal('mahasiswa')}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 hover:border-gold/50 dark:hover:border-gold/50 text-slate-700 dark:text-slate-300 hover:text-gold dark:hover:text-gold text-xs font-bold rounded-xl transition-all cursor-pointer"
-            >
-              Portal Mahasiswa
-            </button>
-            <button
-              onClick={() => onSelectPortal('dosen')}
-              className="px-4 py-2 bg-gold hover:bg-gold-hover text-charcoal text-xs font-black rounded-xl transition-all shadow-md shadow-gold/10 cursor-pointer"
-            >
-              Login Dosen
-            </button>
-          </nav>
+
         </div>
       </header>
 
@@ -181,11 +170,108 @@ export default function LandingPage({ theme, onSelectPortal }) {
             <span>&copy; 2026. Hak Cipta Dilindungi Undang-Undang.</span>
           </div>
           <div className="flex space-x-4">
-            <span className="hover:text-gold transition-colors cursor-pointer">Panduan Akademik</span>
-            <span className="hover:text-gold transition-colors cursor-pointer">Hubungi Bantuan</span>
+            <button 
+              onClick={() => setShowHelpModal(true)}
+              className="hover:text-gold transition-colors cursor-pointer font-semibold"
+            >
+              Hubungi Bantuan
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* MODAL HUBUNGI BANTUAN (STATIK DUMMY INFO) */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-2xl space-y-6 relative">
+            
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gold/10 text-gold rounded-xl border border-gold/20">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">Hubungi Bantuan</h3>
+                  <p className="text-[11px] text-slate-500">Pusat Layanan Dukungan Akademik</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content List Informasi Kontak Dummy */}
+            <div className="space-y-4 text-xs">
+              
+              {/* Telepon */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center space-x-4">
+                <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Telepon & WhatsApp Support</span>
+                  <strong className="text-slate-900 dark:text-white text-sm">+62 812-3456-7890</strong>
+                </div>
+              </div>
+
+              {/* Instagram */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center space-x-4">
+                <div className="p-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" strokeWidth="2"></rect>
+                    <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" strokeWidth="2"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" strokeWidth="2"></line>
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Official Instagram</span>
+                  <strong className="text-slate-900 dark:text-white text-sm">@plagiarisme_platform</strong>
+                </div>
+              </div>
+
+              {/* GitHub */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center space-x-4">
+                <div className="p-2.5 bg-slate-700/10 text-slate-800 dark:text-slate-200 rounded-xl">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">GitHub Repository</span>
+                  <a 
+                    href="https://github.com/syibil-itind/plagiarisme-platform" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gold font-bold hover:underline text-xs block"
+                  >
+                    github.com/syibil-itind/plagiarisme-platform
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Modal */}
+            <div className="pt-2">
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer"
+              >
+                Tutup Info Kontak
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

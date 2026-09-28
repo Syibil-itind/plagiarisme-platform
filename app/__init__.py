@@ -24,6 +24,7 @@ def create_app(config_class=Config):
     CORS(app)
     
     config_class.init_app(app)
+    celery_init_app(app)
 
     # Menambahkan error handler dasar
     @app.errorhandler(404)
@@ -34,10 +35,47 @@ def create_app(config_class=Config):
     def internal_error(error):
         return jsonify({"error": "Terjadi kesalahan internal server"}), 500
 
-    # Endpoint Health-Check
+    # Root & Health-Check Endpoint
+    @app.route('/', methods=['GET'])
+    def index():
+        db_status = "Disconnected"
+        try:
+            from app.db import get_supabase_client
+            supabase = get_supabase_client()
+            res = supabase.table('users').select('id').limit(1).execute()
+            db_status = "Connected"
+        except Exception as e:
+            db_status = f"Error: {str(e)}"
+
+        return jsonify({
+            "status": "online",
+            "message": "Selamat datang di API Plagiarisme Platform",
+            "supabase_status": db_status,
+            "supabase_url": app.config.get("SUPABASE_URL"),
+            "endpoints": {
+                "health": "/health",
+                "auth": "/api/auth",
+                "classes": "/api/classes",
+                "submissions": "/api/submissions"
+            }
+        }), 200
+
     @app.route('/health', methods=['GET'])
     def health_check():
-        return jsonify({"status": "healthy", "message": "Plagiarism Detection API is running"}), 200
+        db_status = "Disconnected"
+        try:
+            from app.db import get_supabase_client
+            supabase = get_supabase_client()
+            res = supabase.table('users').select('id').limit(1).execute()
+            db_status = "Connected"
+        except Exception as e:
+            db_status = f"Error: {str(e)}"
+
+        return jsonify({
+            "status": "healthy",
+            "database": db_status,
+            "message": "Plagiarism Detection API is running"
+        }), 200
 
     # Register Blueprints
     from app.routes.submissions import submissions_bp

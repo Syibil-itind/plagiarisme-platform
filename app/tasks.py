@@ -1,8 +1,14 @@
 import time
 from celery import shared_task
 from app.utils.plagiarism_detector import PlagiarismDetector
-from app.db import get_supabase_client
+from app.db import get_supabase_client, get_supabase_admin_client
 from app.utils.email import send_plagiarism_alert_email
+
+def safe_update_state(task_obj, state, meta):
+    try:
+        task_obj.update_state(state=state, meta=meta)
+    except Exception as e:
+        print(f"[State Update Ignored] {e}")
 
 @shared_task(bind=True)
 def process_documents_task(self, documents, assignment_id=None, mahasiswa_id=None, filenames=None, threshold=70.0):
@@ -13,21 +19,24 @@ def process_documents_task(self, documents, assignment_id=None, mahasiswa_id=Non
     Jika metadata lengkap disediakan, hasil akan otomatis disinkronkan ke PostgreSQL.
     """
     # Tahap 1: Memulai tahapan pembersihan teks bahasa Indonesia
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 1, 'total_steps': 4, 'status_message': 'Melakukan tokenisasi dan pembersihan stopword bahasa Indonesia...'}
     )
-    time.sleep(1.5) # Simulasi durasi pemrosesan NLP Sastrawi
+    time.sleep(0.5)
 
     # Tahap 2: Memulai pembobotan leksikal kata dengan TF-IDF
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 2, 'total_steps': 4, 'status_message': 'Pembersihan selesai. Sedang membangun kamus kata leksikal & matriks TF-IDF...'}
     )
-    time.sleep(1.0) # Simulasi durasi kalkulasi TF-IDF
+    time.sleep(0.5)
 
     # Tahap 3: Memulai pemahaman semantik menggunakan transformer
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 3, 'total_steps': 4, 'status_message': 'Mengekstrak makna semantik kalimat menggunakan model neural transformer...'}
     )
@@ -38,7 +47,8 @@ def process_documents_task(self, documents, assignment_id=None, mahasiswa_id=Non
     plagiarism_results = detector.analyze()
 
     # Tahap 4: Finalisasi hasil analisis
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 4, 'total_steps': 4, 'status_message': 'Sinkronisasi hasil analisis ke database Supabase...'}
     )
@@ -48,7 +58,7 @@ def process_documents_task(self, documents, assignment_id=None, mahasiswa_id=Non
     # Menyimpan hasil ke database jika data disediakan
     if assignment_id and mahasiswa_id:
         try:
-            supabase = get_supabase_client()
+            supabase = get_supabase_admin_client()
             submission_ids = []
             
             # 1. Simpan setiap dokumen ke tabel submissions
@@ -134,21 +144,24 @@ def audit_submissions_task(self, submission_ids, documents, filenames, assignmen
     Celery task asinkron untuk melakukan analisis plagiarisme batch kelas pada submissions yang sudah terdaftar.
     """
     # Tahap 1: Memulai pembersihan teks
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 1, 'total_steps': 4, 'status_message': 'Melakukan tokenisasi dan pembersihan stopword bahasa Indonesia...'}
     )
-    time.sleep(1.5)
+    time.sleep(0.5)
 
     # Tahap 2: Memulai pembobotan leksikal
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 2, 'total_steps': 4, 'status_message': 'Pembersihan selesai. Sedang membangun kamus kata leksikal & matriks TF-IDF...'}
     )
-    time.sleep(1.0)
+    time.sleep(0.5)
 
     # Tahap 3: Memulai pemahaman semantik menggunakan transformer
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 3, 'total_steps': 4, 'status_message': 'Mengekstrak makna semantik kalimat menggunakan model neural transformer...'}
     )
@@ -157,13 +170,14 @@ def audit_submissions_task(self, submission_ids, documents, filenames, assignmen
     plagiarism_results = detector.analyze()
 
     # Tahap 4: Finalisasi hasil analisis & sinkronisasi database
-    self.update_state(
+    safe_update_state(
+        self,
         state='PROGRESS', 
         meta={'current_step': 4, 'total_steps': 4, 'status_message': 'Menghapus data kesamaan lama & menyinkronkan hasil audit baru ke database Supabase...'}
     )
 
     try:
-        supabase = get_supabase_client()
+        supabase = get_supabase_admin_client()
         
         # 1. Hapus similarity results lama terkait submissions ini
         for sub_id in submission_ids:

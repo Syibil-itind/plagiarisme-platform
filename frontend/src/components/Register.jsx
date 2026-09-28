@@ -4,14 +4,38 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullname, setFullname] = useState('');
-  const [role, setRole] = useState(initialRole || 'mahasiswa'); // Pre-selected role
+  const [role, setRole] = useState(initialRole || 'mahasiswa');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const validateEmail = (emailStr) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(emailStr.trim());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password || !fullname || !role) {
-      alert("Harap lengkapi semua kolom pendaftaran!");
+    const cleanFullname = fullname.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanFullname || !cleanEmail || !password || !role) {
+      setError("Harap lengkapi semua kolom pendaftaran!");
+      return;
+    }
+
+    if (cleanFullname.length < 2) {
+      setError("Nama lengkap harus terdiri atas minimal 2 karakter!");
+      return;
+    }
+
+    if (!validateEmail(cleanEmail)) {
+      setError("Format alamat email tidak valid! (contoh: nama@domain.com)");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password terlalu pendek! Minimal harus terdiri atas 6 karakter.");
       return;
     }
 
@@ -24,7 +48,7 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, fullname, role }),
+        body: JSON.stringify({ email: cleanEmail, password, fullname: cleanFullname, role }),
       });
 
       const data = await response.json();
@@ -33,7 +57,6 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
         throw new Error(data.error || "Pendaftaran gagal. Silakan coba kembali.");
       }
 
-      alert("Registrasi Berhasil! Silakan masuk dengan akun baru Anda.");
       onRegisterSuccess();
     } catch (err) {
       setError(err.message);
@@ -56,7 +79,7 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
             onClick={onBackToLanding}
             className="inline-flex items-center text-[10px] uppercase font-extrabold tracking-widest text-gold bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-full cursor-pointer hover:bg-gold/20 transition-all"
           >
-            &larr; SYBIL-ITIND Portal
+            &larr; PlagiarisMe Portal
           </span>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Daftar Akun Baru</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Mulai platform deteksi plagiarisme dan bergabunglah ke kelas Anda.</p>
@@ -64,8 +87,11 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
 
         {/* Eror Alert */}
         {error && (
-          <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-2xl text-rose-850 dark:text-rose-300 text-xs font-semibold">
-            {error}
+          <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-2xl text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+            <svg className="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{error}</span>
           </div>
         )}
 
@@ -77,7 +103,10 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
               type="text"
               required
               value={fullname}
-              onChange={(e) => setFullname(e.target.value)}
+              onChange={(e) => {
+                setFullname(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="Budi Santoso, M.T."
               className="w-full p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all"
             />
@@ -89,22 +118,38 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="nama@institusi.ac.id"
               className="w-full p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all"
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 relative">
             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimal 6 karakter"
-              className="w-full p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="Minimal 6 karakter"
+                className="w-full p-3.5 pr-10 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold bg-slate-50 dark:bg-slate-950/50 text-slate-950 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold p-1 cursor-pointer"
+                title={showPassword ? "Sembunyikan Password" : "Tampilkan Password"}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           {/* Pemilih Role */}

@@ -1,2 +1,4 @@
 // Global API Configuration for Frontend (Vite)
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://plagiarisme-platform-production.up.railway.app').replace(/\/+$/, '');
+// Set to empty string so fetch calls hit same-origin Vercel serverless proxy (/api/...)
+// This eliminates cross-domain browser CORS preflight checks completely.
+export const API_BASE_URL = '';

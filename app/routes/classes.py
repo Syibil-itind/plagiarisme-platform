@@ -15,7 +15,7 @@ def generate_class_code(length=6) -> str:
     return ''.join(random.choice(characters) for _ in range(length))
 
 
-@classes_bp.route('', methods=['POST'])
+@classes_bp.route('', methods=['POST', 'OPTIONS'])
 @login_required
 @dosen_only
 def create_class():
@@ -65,7 +65,7 @@ def create_class():
         return jsonify({"error": f"Gagal membuat kelas: {str(e)}"}), 500
 
 
-@classes_bp.route('/join', methods=['POST'])
+@classes_bp.route('/join', methods=['POST', 'OPTIONS'])
 @login_required
 def join_class():
     """
@@ -121,7 +121,7 @@ def join_class():
         return jsonify({"error": f"Gagal bergabung ke kelas: {str(e)}"}), 500
 
 
-@classes_bp.route('', methods=['GET'])
+@classes_bp.route('', methods=['GET', 'OPTIONS'])
 @login_required
 def get_user_classes():
     """
@@ -167,7 +167,7 @@ def get_user_classes():
         return jsonify({"error": f"Gagal mengambil daftar kelas: {str(e)}"}), 500
 
 
-@classes_bp.route('/<class_id>/assignments', methods=['POST'])
+@classes_bp.route('/<class_id>/assignments', methods=['POST', 'OPTIONS'])
 @login_required
 @dosen_only
 def create_assignment(class_id):
@@ -216,7 +216,7 @@ def create_assignment(class_id):
         return jsonify({"error": f"Gagal membuat tugas: {str(e)}"}), 500
 
 
-@classes_bp.route('/<class_id>/assignments', methods=['GET'])
+@classes_bp.route('/<class_id>/assignments', methods=['GET', 'OPTIONS'])
 @login_required
 def get_class_assignments(class_id):
     """

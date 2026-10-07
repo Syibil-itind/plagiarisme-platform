@@ -5,7 +5,7 @@ from app.utils.decorators import login_required
 # Inisialisasi blueprint auth
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
     """
     Endpoint POST untuk melakukan registrasi pengguna baru (Dosen / Mahasiswa).
@@ -81,7 +81,7 @@ def register():
         return jsonify({"error": f"Gagal menyelesaikan registrasi: {error_msg}"}), 500
 
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
     """
     Endpoint POST untuk melakukan login masuk pengguna.
@@ -147,7 +147,7 @@ def login():
         return jsonify({"error": f"Gagal memproses login: {error_msg}"}), 500
 
 
-@auth_bp.route('/me', methods=['GET'])
+@auth_bp.route('/me', methods=['GET', 'OPTIONS'])
 @login_required
 def get_current_user_profile():
     """

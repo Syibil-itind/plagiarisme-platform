@@ -20,9 +20,17 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Mengaktifkan CORS secara penuh untuk seluruh origin, methods, dan headers (Vercel & Localhost)
-    CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
-    
+    from flask import request, make_response
+
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+            response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+            return response, 200
+
     @app.after_request
     def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', '*')

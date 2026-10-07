@@ -8,7 +8,7 @@ from celery.result import AsyncResult
 # Inisialisasi blueprint submissions
 submissions_bp = Blueprint('submissions', __name__)
 
-@submissions_bp.route('/upload', methods=['POST'])
+@submissions_bp.route('/upload', methods=['POST', 'OPTIONS'])
 @login_required
 def upload_documents():
     """
@@ -76,7 +76,7 @@ def upload_documents():
         }), 500
 
 
-@submissions_bp.route('/upload-files', methods=['POST'])
+@submissions_bp.route('/upload-files', methods=['POST', 'OPTIONS'])
 @login_required
 def upload_files():
     """
@@ -168,7 +168,7 @@ def upload_files():
 
 EAGER_TASK_RESULTS = {}
 
-@submissions_bp.route('/status/<task_id>', methods=['GET'])
+@submissions_bp.route('/status/<task_id>', methods=['GET', 'OPTIONS'])
 def get_task_status(task_id):
     """
     Endpoint GET untuk melakukan polling status penyelesaian tugas analisis plagiarisme.
@@ -238,7 +238,7 @@ def get_task_status(task_id):
     return jsonify(response), 200
 
 
-@submissions_bp.route('/submit', methods=['POST'])
+@submissions_bp.route('/submit', methods=['POST', 'OPTIONS'])
 @login_required
 def submit_assignment():
     """
@@ -357,7 +357,7 @@ def submit_assignment():
         return jsonify({"error": f"Terjadi kesalahan saat mengumpulkan tugas: {str(e)}"}), 500
 
 
-@submissions_bp.route('/assignment/<assignment_id>', methods=['GET'])
+@submissions_bp.route('/assignment/<assignment_id>', methods=['GET', 'OPTIONS'])
 @login_required
 def get_assignment_submissions(assignment_id):
     """
@@ -399,7 +399,7 @@ def get_assignment_submissions(assignment_id):
         return jsonify({"error": f"Gagal mengambil data pengumpulan: {str(e)}"}), 500
 
 
-@submissions_bp.route('/audit', methods=['POST'])
+@submissions_bp.route('/audit', methods=['POST', 'OPTIONS'])
 @login_required
 @dosen_only
 def run_plagiarism_audit():

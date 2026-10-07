@@ -9,9 +9,6 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 # Import cosine_similarity untuk menghitung derajat kecocokan sudut (cosine) di antara pasangan vektor dokumen
 from sklearn.metrics.pairwise import cosine_similarity
-# Import SentenceTransformer untuk melakukan kalkulasi semantik berbasis Deep Learning / neural embeddings
-from sentence_transformers import SentenceTransformer
-
 # Deklarasi kelas utama untuk mendeteksi tingkat kemiripan plagiarisme antar dokumen
 class PlagiarismDetector:
     
@@ -36,7 +33,12 @@ class PlagiarismDetector:
     @property
     def model(self):
         if self._model is None:
-            self._model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+            except Exception as e:
+                print(f"[NLP Memory Protection] Could not load SentenceTransformer: {e}")
+                self._model = False
         return self._model
 
     # Fungsi pembantu untuk memproses satu dokumen teks tunggal bahasa Indonesia
@@ -65,16 +67,19 @@ class PlagiarismDetector:
 
     # Fungsi untuk menghitung kemiripan dokumen berdasarkan pemahaman konteks makna kalimat (Semantik)
     def calculate_semantic_similarity(self):
-        # Melakukan pengodean dokumen asli ke dalam representasi dense embeddings vektor 384-dimensi menggunakan model PyTorch
-        embeddings = self.model.encode(self.documents, convert_to_tensor=True)
-        # Memindahkan tensor hasil pemrosesan model (bisa dari GPU/CPU) ke CPU lokal lalu mengubahnya menjadi numpy array
-        embeddings_np = embeddings.cpu().numpy()
-        # Menghitung cosine similarity di antara seluruh vektor representasi semantik dokumen secara pairwise
-        similarity_matrix = cosine_similarity(embeddings_np)
-        # Mengubah skala desimal [0.0, 1.0] ke persentase [0.0, 100.0] dan melakukan pembatasan (clipping)
-        similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
-        # Mengonversi matriks nilai kecocokan semantik numpy ke dalam format list bertingkat agar siap di-JSON
-        return similarity_matrix.tolist()
+        if self.model and self.model is not False:
+            try:
+                embeddings = self.model.encode(self.documents, convert_to_tensor=True)
+                embeddings_np = embeddings.cpu().numpy()
+                similarity_matrix = cosine_similarity(embeddings_np)
+                similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
+                return similarity_matrix.tolist()
+            except Exception as e:
+                print(f"[Semantic Similarity Fallback] Falling back to TF-IDF due to: {e}")
+
+        # Fallback to TF-IDF similarity if SentenceTransformer is unavailable or OOM
+        preprocessed_docs = [self.preprocess_text(doc) for doc in self.documents]
+        return self.calculate_tfidf_similarity(preprocessed_docs)
 
     # Membagi teks menjadi kalimat-kalimat beserta posisi indeks karakter aslinya
     def get_sentences_with_indices(self, text):

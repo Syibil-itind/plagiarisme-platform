@@ -40,28 +40,30 @@ class PlagiarismDetector:
             n = len(preprocessed_docs)
             return np.zeros((n, n)).tolist()
 
-    # 2. Menghitung kemiripan SEMANTIK / PARAFRASE (Sentence-Level Character 4-Gram Context Matcher)
+    # 2. Menghitung kemiripan SEMANTIK / PARAFRASE (Sentence-Level Stemmed Word & Character 3-Gram Context Matcher)
     def calculate_semantic_similarity(self):
         n = len(self.documents)
         similarity_matrix = np.eye(n) * 100.0
 
-        def get_char_ngrams(text, n_len=4):
-            clean = re.sub(r'\s+', ' ', text.lower()).strip()
-            if len(clean) < n_len:
-                return set([clean])
-            return set([clean[i:i+n_len] for i in range(len(clean) - n_len + 1)])
-
-        def sentence_semantic_score(s1, s2):
-            g1 = get_char_ngrams(s1)
-            g2 = get_char_ngrams(s2)
-            if not g1 or not g2:
+        def score_sentence_pair(s1, s2):
+            clean1 = self.preprocess_text(s1)
+            clean2 = self.preprocess_text(s2)
+            if not clean1 or not clean2:
                 return 0.0
-            inter = len(g1.intersection(g2))
-            union = len(g1.union(g2))
-            jaccard = (inter / union) if union > 0 else 0.0
-
-            seq = difflib.SequenceMatcher(None, s1.lower(), s2.lower()).ratio()
-            return jaccard * 0.6 + seq * 0.4
+            
+            w1 = set(clean1.split())
+            w2 = set(clean2.split())
+            
+            inter = len(w1.intersection(w2))
+            union = len(w1.union(w2))
+            j_word = (inter / union) if union > 0 else 0.0
+            
+            c1 = set([clean1[i:i+3] for i in range(len(clean1)-2)])
+            c2 = set([clean2[i:i+3] for i in range(len(clean2)-2)])
+            j_char = (len(c1.intersection(c2)) / len(c1.union(c2))) if (c1 and c2) else 0.0
+            
+            seq = difflib.SequenceMatcher(None, clean1, clean2).ratio()
+            return j_word * 0.4 + j_char * 0.4 + seq * 0.2
 
         for i in range(n):
             for j in range(i + 1, n):
@@ -71,12 +73,15 @@ class PlagiarismDetector:
                 if not sents1 or not sents2:
                     score = 0.0
                 else:
-                    max_1 = [max([sentence_semantic_score(s1, s2) for s2 in sents2], default=0.0) for s1 in sents1]
-                    max_2 = [max([sentence_semantic_score(s2, s1) for s1 in sents1], default=0.0) for s2 in sents2]
+                    max_1 = [max([score_sentence_pair(s1, s2) for s2 in sents2], default=0.0) for s1 in sents1]
+                    max_2 = [max([score_sentence_pair(s2, s1) for s1 in sents1], default=0.0) for s2 in sents2]
                     
                     avg_sim = (np.mean(max_1) + np.mean(max_2)) / 2.0
-                    # Boost factor untuk menangkap paraphrase konteks secara sensitif
-                    score = round(min(100.0, avg_sim * 140.0), 1)
+                    
+                    if avg_sim < 0.08:
+                        score = round(avg_sim * 100.0, 1)
+                    else:
+                        score = round(min(100.0, avg_sim * 315.0), 1)
 
                 similarity_matrix[i][j] = score
                 similarity_matrix[j][i] = score

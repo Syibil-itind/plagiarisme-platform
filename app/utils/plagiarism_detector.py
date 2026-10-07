@@ -104,8 +104,36 @@ class PlagiarismDetector:
                 })
         return sentences
 
-    # 3. Menghitung pencocokan kalimat (Highlight Overlap) berbasis Fuzzy Pairwise Matching
-    def get_overlap_highlights(self, threshold=0.45):
+    # 3. Menghitung pencocokan kalimat (Highlight Overlap) berbasis Calibrated Pairwise Sentence Matching
+    def score_sentence_pair(self, s1_text, s2_text):
+        clean1 = self.preprocess_text(s1_text)
+        clean2 = self.preprocess_text(s2_text)
+        if not clean1 or not clean2:
+            return 0.0
+        
+        w1 = set(clean1.split())
+        w2 = set(clean2.split())
+        
+        inter = len(w1.intersection(w2))
+        union = len(w1.union(w2))
+        j_word = (inter / union) if union > 0 else 0.0
+        
+        c1 = set([clean1[i:i+3] for i in range(len(clean1)-2)])
+        c2 = set([clean2[i:i+3] for i in range(len(clean2)-2)])
+        j_char = (len(c1.intersection(c2)) / len(c1.union(c2))) if (c1 and c2) else 0.0
+        
+        seq = difflib.SequenceMatcher(None, clean1, clean2).ratio()
+        raw = j_word * 0.4 + j_char * 0.4 + seq * 0.2
+        
+        if raw <= 0.05:
+            score = raw * 100.0
+        elif raw < 0.28:
+            score = 5.0 + ((raw - 0.05) / 0.23) * 80.0
+        else:
+            score = 85.0 + ((raw - 0.28) / 0.72) * 15.0
+        return round(min(100.0, max(0.0, score)), 1)
+
+    def get_overlap_highlights(self, min_threshold=10.0):
         overlap_matrix = {}
         doc_sentences = [self.get_sentences_with_indices(doc) for doc in self.documents]
 
@@ -121,18 +149,23 @@ class PlagiarismDetector:
                 overlap_matrix[key] = []
 
                 for s1 in sents1:
-                    for s2 in sents2:
-                        matcher = difflib.SequenceMatcher(None, s1["text"].lower(), s2["text"].lower())
-                        score = matcher.ratio()
+                    best_match = None
+                    best_score = 0.0
 
-                        if score >= threshold:
-                            overlap_matrix[key].append({
-                                "start_self": s1["start"],
-                                "end_self": s1["end"],
-                                "start_other": s2["start"],
-                                "end_other": s2["end"],
-                                "score": round(score * 100, 1)
-                            })
+                    for s2 in sents2:
+                        score = self.score_sentence_pair(s1["text"], s2["text"])
+                        if score > best_score:
+                            best_score = score
+                            best_match = s2
+
+                    if best_match and best_score >= min_threshold:
+                        overlap_matrix[key].append({
+                            "start_self": s1["start"],
+                            "end_self": s1["end"],
+                            "start_other": best_match["start"],
+                            "end_other": best_match["end"],
+                            "score": round(best_score, 1)
+                        })
 
         return overlap_matrix
 
@@ -141,7 +174,7 @@ class PlagiarismDetector:
         preprocessed_docs = [self.preprocess_text(doc) for doc in self.documents]
         tfidf_matrix = self.calculate_tfidf_similarity(preprocessed_docs)
         semantic_matrix = self.calculate_semantic_similarity()
-        overlap_details = self.get_overlap_highlights(threshold=0.45)
+        overlap_details = self.get_overlap_highlights(min_threshold=10.0)
 
         return {
             "tfidf_similarity": tfidf_matrix,

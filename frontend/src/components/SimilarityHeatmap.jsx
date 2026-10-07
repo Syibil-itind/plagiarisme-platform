@@ -165,12 +165,38 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     setIsExporting(true);
 
     try {
-      const isDarkActive = document.documentElement.classList.contains('dark');
       const canvas = await html2canvas(element, {
         scale: 2, // Resolusi tinggi
         useCORS: true,
-        backgroundColor: isDarkActive ? '#121212' : '#ffffff', // Menyesuaikan warna latar belakang laporan PDF dengan tema aktif
-        logging: false
+        backgroundColor: '#ffffff',
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Memaksa mode putih (Light Academic Mode) pada klon dokumen saat diekspor ke PDF
+          const reportEl = clonedDoc.getElementById('plagiarism-report-container');
+          if (reportEl) {
+            reportEl.classList.remove('dark', 'bg-slate-900');
+            reportEl.style.backgroundColor = '#ffffff';
+            reportEl.style.color = '#0f172a';
+            
+            // Pastikan semua elemen teks berubah menjadi gelap di atas kertas putih
+            const darkTextNodes = reportEl.querySelectorAll('.dark\\:text-slate-100, .dark\\:text-slate-200, .dark\\:text-slate-300, .dark\\:text-white');
+            darkTextNodes.forEach(node => {
+              node.style.color = '#0f172a';
+            });
+            
+            // Pastikan semua latar belakang kartu komponen menjadi terang/putih
+            const darkBgNodes = reportEl.querySelectorAll('.dark\\:bg-slate-900, .dark\\:bg-slate-950, .dark\\:bg-slate-950\\/60');
+            darkBgNodes.forEach(node => {
+              node.style.backgroundColor = '#f8fafc';
+              node.style.color = '#0f172a';
+            });
+
+            const darkBorders = reportEl.querySelectorAll('.dark\\:border-slate-800');
+            darkBorders.forEach(node => {
+              node.style.borderColor = '#e2e8f0';
+            });
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');

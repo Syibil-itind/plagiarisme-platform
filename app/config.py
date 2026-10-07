@@ -5,9 +5,9 @@ load_dotenv(override=True)
 print("DEBUG CONFIG: Loaded SUPABASE_KEY prefix ->", os.getenv("SUPABASE_KEY")[:25] if os.getenv("SUPABASE_KEY") else "None")
 
 class Config:
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip().strip('"').strip("'")
+    SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or "").strip().strip('"').strip("'")
+    SUPABASE_SERVICE_ROLE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip().strip('"').strip("'")
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
     DEBUG = os.getenv("FLASK_DEBUG", "True") == "True"
     

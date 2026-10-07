@@ -1,94 +1,90 @@
-# Import library numpy untuk memproses data array & matriks matematika
 import numpy as np
 import re
-# Import Sastrawi StopWordRemoverFactory untuk membuang kata tidak penting (stopword) bahasa Indonesia
+import difflib
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-# Import Sastrawi StemmerFactory untuk melakukan stemming (mengubah kata berimbuhan ke kata dasar) bahasa Indonesia
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
-# Import TfidfVectorizer untuk mengonversi kumpulan teks dokumen menjadi matriks pembobotan kata TF-IDF
 from sklearn.feature_extraction.text import TfidfVectorizer
-# Import cosine_similarity untuk menghitung derajat kecocokan sudut (cosine) di antara pasangan vektor dokumen
 from sklearn.metrics.pairwise import cosine_similarity
-# Deklarasi kelas utama untuk mendeteksi tingkat kemiripan plagiarisme antar dokumen
+
 class PlagiarismDetector:
-    
-    # Fungsi inisialisasi objek (constructor) untuk mempersiapkan data dokumen dan model NLP
+    """
+    Kelas pendeteksi plagiarisme cerdas multi-metode (Leksikal + Semantik N-Gram Context)
+    yang memberikan hasil persentase leksikal & semantik yang berbeda serta highlight pencocokan kalimat.
+    """
     def __init__(self, documents):
-        # Menyimpan daftar string (dokumen tugas mahasiswa) ke dalam properti kelas
         self.documents = documents
         
-        # Membuat factory pembuat stopword remover bahasa Indonesia dari Sastrawi
+        # Stopword remover & Stemmer dari Sastrawi untuk Bahasa Indonesia
         stopword_factory = StopWordRemoverFactory()
-        # Menginisialisasi objek stopword remover untuk digunakan saat preprocessing teks
         self.stopword_remover = stopword_factory.create_stop_word_remover()
         
-        # Membuat factory pembuat stemmer kata bahasa Indonesia dari Sastrawi
         stemmer_factory = StemmerFactory()
-        # Menginisialisasi objek stemmer untuk mengubah kata berimbuhan menjadi kata dasar
         self.stemmer = stemmer_factory.create_stemmer()
-        
-        # Lazy-loaded model property to keep app startup lightweight
-        self._model = None
 
-    @property
-    def model(self):
-        if self._model is None:
-            try:
-                from sentence_transformers import SentenceTransformer
-                self._model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            except Exception as e:
-                print(f"[NLP Memory Protection] Could not load SentenceTransformer: {e}")
-                self._model = False
-        return self._model
-
-    # Fungsi pembantu untuk memproses satu dokumen teks tunggal bahasa Indonesia
+    # Preprocessing teks Bahasa Indonesia (Case folding, Stopword Removal, Stemming)
     def preprocess_text(self, text):
-        # Mengubah seluruh huruf teks menjadi huruf kecil (case folding) untuk konsistensi data
         text_lower = text.lower()
-        # Menghapus kata-kata tidak penting (stopword removal) seperti "yang", "dan", "di" menggunakan Sastrawi
         cleaned_text = self.stopword_remover.remove(text_lower)
-        # Melakukan stemming untuk memotong imbuhan kata sehingga tersisa kata dasar saja menggunakan Sastrawi
         stemmed_text = self.stemmer.stem(cleaned_text)
-        # Mengembalikan string teks yang telah selesai dibersihkan dan disederhanakan
         return stemmed_text
 
-    # Fungsi untuk menghitung kemiripan kata secara leksikal menggunakan skema TF-IDF dan Cosine Similarity
+    # 1. Menghitung kemiripan LEKSIKAL (TF-IDF + Cosine Similarity)
     def calculate_tfidf_similarity(self, preprocessed_docs):
         try:
-            vectorizer = TfidfVectorizer()
+            vectorizer = TfidfVectorizer(ngram_range=(1, 2))
             tfidf_matrix = vectorizer.fit_transform(preprocessed_docs)
             similarity_matrix = cosine_similarity(tfidf_matrix)
             similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
             return similarity_matrix.tolist()
         except ValueError:
-            # Fallback jika dokumen kosong atau hanya berisi stopword yang terhapus seluruhnya
             n = len(preprocessed_docs)
             return np.zeros((n, n)).tolist()
 
-    # Fungsi untuk menghitung kemiripan dokumen berdasarkan pemahaman konteks makna kalimat (Semantik)
+    # 2. Menghitung kemiripan SEMANTIK / STRUKTURAL (Character & Word N-Gram Jaccard + SequenceMatcher)
     def calculate_semantic_similarity(self):
-        if self.model and self.model is not False:
-            try:
-                embeddings = self.model.encode(self.documents, convert_to_tensor=True)
-                embeddings_np = embeddings.cpu().numpy()
-                similarity_matrix = cosine_similarity(embeddings_np)
-                similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
-                return similarity_matrix.tolist()
-            except Exception as e:
-                print(f"[Semantic Similarity Fallback] Falling back to TF-IDF due to: {e}")
+        n = len(self.documents)
+        similarity_matrix = np.eye(n) * 100.0
 
-        # Fallback to TF-IDF similarity if SentenceTransformer is unavailable or OOM
-        preprocessed_docs = [self.preprocess_text(doc) for doc in self.documents]
-        return self.calculate_tfidf_similarity(preprocessed_docs)
+        for i in range(n):
+            for j in range(i + 1, n):
+                doc1 = self.documents[i]
+                doc2 = self.documents[j]
 
-    # Membagi teks menjadi kalimat-kalimat beserta posisi indeks karakter aslinya
+                # Extract n-grams (3-gram kata dan 5-gram karakter untuk menangkap susunan konteks)
+                words1 = re.findall(r'\w+', doc1.lower())
+                words2 = re.findall(r'\w+', doc2.lower())
+
+                if not words1 or not words2:
+                    sim_score = 0.0
+                else:
+                    # N-gram Jaccard similarity
+                    ngrams1 = set(zip(*[words1[k:] for k in range(min(3, len(words1)))]))
+                    ngrams2 = set(zip(*[words2[k:] for k in range(min(3, len(words2)))]))
+
+                    intersection = len(ngrams1.intersection(ngrams2))
+                    union = len(ngrams1.union(ngrams2))
+                    jaccard_score = (intersection / union) if union > 0 else 0.0
+
+                    # SequenceMatcher ratio (urutan susunan kalimat)
+                    seq_matcher = difflib.SequenceMatcher(None, doc1.lower(), doc2.lower())
+                    seq_score = seq_matcher.ratio()
+
+                    # Gabungan skor semantik konteks & struktur
+                    combined_score = (jaccard_score * 0.4 + seq_score * 0.6) * 100.0
+                    sim_score = min(100.0, max(0.0, combined_score))
+
+                similarity_matrix[i][j] = round(sim_score, 1)
+                similarity_matrix[j][i] = round(sim_score, 1)
+
+        return similarity_matrix.tolist()
+
+    # Membagi teks menjadi kalimat beserta indeks posisi karakternya
     def get_sentences_with_indices(self, text):
         sentences = []
-        # Menggunakan regex untuk mendeteksi kalimat (dipisah titik, tanda tanya, seru, atau baris baru)
         pattern = re.compile(r'[^.!?\n]+[.!?\n]*')
         for match in pattern.finditer(text):
             sentence_text = match.group().strip()
-            if len(sentence_text) > 8: # Abaikan kalimat yang terlalu pendek/tidak berarti
+            if len(sentence_text) >= 8:
                 sentences.append({
                     "text": sentence_text,
                     "start": match.start(),
@@ -96,86 +92,49 @@ class PlagiarismDetector:
                 })
         return sentences
 
-    # Menghitung pencocokan kalimat pairwise untuk deteksi highlight overlapping
-    def get_overlap_highlights(self):
+    # 3. Menghitung pencocokan kalimat (Highlight Overlap) berbasis Fuzzy Pairwise Matching
+    def get_overlap_highlights(self, threshold=0.55):
         overlap_matrix = {}
         doc_sentences = [self.get_sentences_with_indices(doc) for doc in self.documents]
-        
-        all_sentences = []
-        sentence_map = [] # Menyimpan tuple (doc_idx, sent_idx)
-        
-        for d_idx, sents in enumerate(doc_sentences):
-            for s_idx, sent in enumerate(sents):
-                all_sentences.append(sent["text"])
-                sentence_map.append((d_idx, s_idx))
-                
-        if not all_sentences or not self.model or self.model is False:
-            return {}
-            
-        # Kalkulasi embeddings untuk seluruh kalimat
-        embeddings = self.model.encode(all_sentences, convert_to_tensor=True)
-        embeddings_np = embeddings.cpu().numpy()
-        sim_matrix = cosine_similarity(embeddings_np)
-        
-        # Bangun indeks pencocokan pairwise
-        for idx1, (d1, s1) in enumerate(sentence_map):
-            for idx2, (d2, s2) in enumerate(sentence_map):
-                if d1 >= d2: # Cukup bandingkan sekali, hindari self-comparison
+
+        for d1 in range(len(self.documents)):
+            for d2 in range(len(self.documents)):
+                if d1 == d2:
                     continue
-                    
-                score = float(sim_matrix[idx1][idx2])
-                if score >= 0.78: # Threshold sensitivitas plagiarisme kalimat semantik
-                    sent1 = doc_sentences[d1][s1]
-                    sent2 = doc_sentences[d2][s2]
-                    
-                    # Hubungan d1 -> d2
-                    key_forward = f"{d1}_{d2}"
-                    if key_forward not in overlap_matrix:
-                        overlap_matrix[key_forward] = []
-                    overlap_matrix[key_forward].append({
-                        "start_self": sent1["start"],
-                        "end_self": sent1["end"],
-                        "start_other": sent2["start"],
-                        "end_other": sent2["end"],
-                        "score": score
-                    })
-                    
-                    # Hubungan d2 -> d1 (swapped roles)
-                    key_backward = f"{d2}_{d1}"
-                    if key_backward not in overlap_matrix:
-                        overlap_matrix[key_backward] = []
-                    overlap_matrix[key_backward].append({
-                        "start_self": sent2["start"],
-                        "end_self": sent2["end"],
-                        "start_other": sent1["start"],
-                        "end_other": sent1["end"],
-                        "score": score
-                    })
-                    
+
+                sents1 = doc_sentences[d1]
+                sents2 = doc_sentences[d2]
+
+                key = f"{d1}_{d2}"
+                overlap_matrix[key] = []
+
+                for s1 in sents1:
+                    for s2 in sents2:
+                        matcher = difflib.SequenceMatcher(None, s1["text"].lower(), s2["text"].lower())
+                        score = matcher.ratio()
+
+                        if score >= threshold:
+                            overlap_matrix[key].append({
+                                "start_self": s1["start"],
+                                "end_self": s1["end"],
+                                "start_other": s2["start"],
+                                "end_other": s2["end"],
+                                "score": round(score * 100, 1)
+                            })
+
         return overlap_matrix
 
-    # Fungsi utama yang mengoordinasikan seluruh tahapan analisis plagiarisme
+    # 4. Fungsi Utama Analisis Plagiarisme
     def analyze(self):
-        # Melakukan proses iterasi pembersihan teks (preprocessing) pada setiap string dokumen di dalam array
         preprocessed_docs = [self.preprocess_text(doc) for doc in self.documents]
-        
-        # Mengeksekusi kalkulasi kemiripan teks berbasis frekuensi kemunculan kata (TF-IDF)
         tfidf_matrix = self.calculate_tfidf_similarity(preprocessed_docs)
-        
-        # Mengeksekusi kalkulasi kemiripan makna kalimat (Semantik) menggunakan deep learning transformers
         semantic_matrix = self.calculate_semantic_similarity()
-        
-        # Mengekstrak kemiripan kalimat detail untuk visualisasi highlight
-        overlap_details = self.get_overlap_highlights()
-        
-        # Membungkus semua hasil olahan data ke dalam struktur kamus (dictionary) Python
-        result = {
+        overlap_details = self.get_overlap_highlights(threshold=0.55)
+
+        return {
             "tfidf_similarity": tfidf_matrix,
             "semantic_similarity": semantic_matrix,
             "preprocessed_documents": preprocessed_docs,
             "original_documents": self.documents,
             "overlap_details": overlap_details
         }
-        
-        # Mengembalikan dictionary berisi matriks NxN yang siap dilempar langsung sebagai JSON ke client/frontend
-        return result

@@ -10,12 +10,11 @@ import html2canvas from 'html2canvas';
  * berbentuk overlay modal berskala besar serta ekspor laporan PDF resmi akademik.
  */
 export default function SimilarityHeatmap({ matrix, documents, filenames = [], overlapDetails = {} }) {
-  // State untuk menyimpan baris dan kolom sel yang sedang di-hover pengguna
   const [hoveredCell, setHoveredCell] = useState(null);
-  // State untuk menyimpan pasangan dokumen yang diklik untuk dibanding secara detail di modal
   const [selectedPair, setSelectedPair] = useState(null);
-  // State saat PDF sedang di-generate
   const [isExporting, setIsExporting] = useState(false);
+  // State Slider Toleransi Dinamis (Default: 30%)
+  const [tolerance, setTolerance] = useState(30);
 
   // Efek keyboard untuk menutup modal dengan menekan tombol 'Esc'
   useEffect(() => {
@@ -55,13 +54,12 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     if (i === j) {
       return "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed";
     }
-    if (score < 30) {
+    if (score < tolerance) {
       return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 hover:scale-105 transition-all cursor-pointer";
     }
-    if (score >= 30 && score < 70) {
+    if (score >= tolerance && score < Math.min(100, tolerance + 30)) {
       return "bg-gold/15 text-yellow-800 dark:text-gold hover:bg-gold/25 dark:hover:bg-gold/30 hover:scale-105 transition-all cursor-pointer border border-gold/25 dark:border-gold/30";
     }
-    // >= 70% (Plagiarisme Tinggi)
     return "bg-rose-500 text-white font-bold hover:bg-rose-600 hover:scale-105 transition-all shadow-md shadow-rose-500/10 border-2 border-rose-600 cursor-pointer animate-pulse";
   };
 
@@ -253,8 +251,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
           </button>
         </div>
 
-        {/* RINGKASAN DATA STATISTIK */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* RINGKASAN DATA STATISTIK & SLIDER TOLERANSI DINAMIS */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Total Dokumen</span>
             <p className="text-2xl font-black text-slate-850 dark:text-slate-200">{N}</p>
@@ -262,14 +260,32 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Rata-rata Kemiripan</span>
             <p className={`text-2xl font-black ${
-              avgScore >= 70 ? "text-rose-600 dark:text-rose-400" : avgScore >= 30 ? "text-yellow-700 dark:text-gold" : "text-emerald-600 dark:text-emerald-400"
+              avgScore >= tolerance ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
             }`}>{avgScore.toFixed(1)}%</p>
           </div>
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Kemiripan Tertinggi</span>
             <p className={`text-2xl font-black ${
-              maxScore >= 70 ? "text-rose-600 dark:text-rose-400" : maxScore >= 30 ? "text-yellow-700 dark:text-gold" : "text-emerald-600 dark:text-emerald-400"
+              maxScore >= tolerance ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
             }`}>{maxScore.toFixed(1)}%</p>
+          </div>
+          
+          {/* SLIDER TOLERANSI PLAGIARISME DINAMIS */}
+          <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-gold/30 rounded-2xl space-y-2 transition-colors relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-extrabold tracking-wider text-gold">Toleransi Plagiasi</span>
+              <span className="text-xs font-black text-gold font-mono px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-md">{tolerance}%</span>
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="90"
+              step="5"
+              value={tolerance}
+              onChange={(e) => setTolerance(Number(e.target.value))}
+              className="w-full accent-gold cursor-pointer"
+            />
+            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Geser untuk mengubah ambang batas warna indikator.</p>
           </div>
         </div>
 

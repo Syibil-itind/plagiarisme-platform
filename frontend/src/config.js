@@ -1,2 +1,3 @@
 // Global API Configuration for Frontend (Vite)
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+// In production on Vercel, use relative paths so Vercel rewrites proxy requests to Railway seamlessly without CORS.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';

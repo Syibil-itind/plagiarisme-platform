@@ -86,68 +86,67 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
   };
 
   /**
-   * Fungsi untuk merender teks dengan tag <mark> pada bagian kalimat yang overlap (plagiat)
+   * Fungsi untuk merender teks dengan tag <mark> pada bagian kalimat yang overlap (plagiat).
+   * Warna penyorotan dinamis mengikuti tingkat plagiasi kalimat:
+   * - Skor >= 70%: MERAH (Plagiasi Tinggi / Bahaya)
+   * - Skor >= tolerance (30%-70%): KUNING/GOLD (Plagiasi Moderat / Waspada)
+   * - Skor < tolerance: TIDAK DI-HIGHLIGHT (Teks biasa / Aman)
    */
   const renderHighlightedText = (text, highlights = []) => {
     if (!text) return '';
     if (!highlights || highlights.length === 0) return text;
 
-    // Filter highlights berdasarkan toleransi slider jika ada atribut score
+    // Filter highlights: Hanya kalimat yang mempunyai skor >= tolerance yang di-highlight
     const validHighlights = highlights.filter(h => h.score === undefined || h.score >= tolerance);
     if (validHighlights.length === 0) return text;
 
-    // Ambil rentang indeks pencocokan diri sendiri
-    const intervals = validHighlights.map(h => ({
-      start: h.start_self,
-      end: h.end_self
-    }));
-
     // Urutkan rentang berdasarkan indeks mulai
-    intervals.sort((a, b) => a.start - b.start);
+    const sorted = validHighlights.map(h => ({
+      start: h.start_self,
+      end: h.end_self,
+      score: h.score !== undefined ? h.score : 100
+    })).sort((a, b) => a.start - b.start);
 
-    // Gabungkan interval yang tumpang tindih atau bersentuhan
-    const merged = [];
-    for (const interval of intervals) {
-      if (merged.length === 0) {
-        merged.push(interval);
-      } else {
-        const last = merged[merged.length - 1];
-        if (interval.start <= last.end) {
-          last.end = Math.max(last.end, interval.end);
-        } else {
-          merged.push(interval);
-        }
-      }
-    }
-
-    // Bangun rangkaian React node dengan tanda highlight <mark>
+    // Bangun rangkaian React node dengan penyorotan warna yang sesuai tingkat plagiasi
     const result = [];
     let lastIndex = 0;
 
-    const isSemantic = mode === 'semantic';
-    const markStyle = isSemantic
-      ? "bg-sky-500/20 text-sky-950 dark:text-sky-300 border-b-2 border-sky-500 font-semibold px-0.5 rounded transition-all cursor-help"
-      : "bg-amber-500/20 text-amber-950 dark:text-amber-300 border-b-2 border-amber-500 font-semibold px-0.5 rounded transition-all cursor-help";
-
-    merged.forEach((interval, idx) => {
-      // Teks biasa sebelum bagian yang mirip
+    sorted.forEach((interval, idx) => {
+      // Teks biasa sebelum interval highlight (skor < tolerance)
       if (interval.start > lastIndex) {
         result.push(text.substring(lastIndex, interval.start));
       }
-      // Teks penyorotan plagiarisme
-      result.push(
-        <mark 
-          key={`m-${idx}`} 
-          className={markStyle}
-          title={isSemantic ? "Teks terindikasi mirip secara semantik (makna)" : "Teks terindikasi mirip secara leksikal (kosakata persis)"}
-        >
-          {text.substring(interval.start, interval.end)}
-        </mark>
-      );
-      lastIndex = interval.end;
+
+      // Tentukan style warna highlight secara eksplisit berdasarkan skor tingkat plagiasi kalimat
+      let markStyle = "";
+      let titleText = "";
+
+      if (interval.score >= 70) {
+        // MERAH / BAHAYA (Plagiasi Tinggi >= 70%)
+        markStyle = "bg-rose-500/30 text-rose-950 dark:text-rose-200 border-b-2 border-rose-500 font-semibold px-0.5 rounded transition-all cursor-help";
+        titleText = `Tingkat Plagiasi Tinggi (${interval.score.toFixed(1)}%)`;
+      } else if (interval.score >= tolerance) {
+        // KUNING / WASPADA (Plagiasi Moderat 30% - 70%)
+        markStyle = "bg-amber-500/30 text-amber-950 dark:text-amber-300 border-b-2 border-amber-500 font-semibold px-0.5 rounded transition-all cursor-help";
+        titleText = `Tingkat Plagiasi Moderat (${interval.score.toFixed(1)}%)`;
+      }
+
+      if (markStyle && interval.end > Math.max(lastIndex, interval.start)) {
+        const actualStart = Math.max(lastIndex, interval.start);
+        result.push(
+          <mark 
+            key={`m-${idx}`} 
+            className={markStyle}
+            title={titleText}
+          >
+            {text.substring(actualStart, interval.end)}
+          </mark>
+        );
+        lastIndex = interval.end;
+      }
     });
 
-    // Sisa teks setelah bagian penyorotan terakhir
+    // Sisa teks setelah interval terakhir
     if (lastIndex < text.length) {
       result.push(text.substring(lastIndex));
     }
@@ -171,29 +170,31 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
         backgroundColor: '#ffffff',
         logging: false,
         onclone: (clonedDoc) => {
-          // Memaksa mode putih (Light Academic Mode) pada klon dokumen saat diekspor ke PDF
+          // 1. Hapus class 'dark' dari root html dan body di dokumen klon
+          clonedDoc.documentElement.classList.remove('dark');
+          clonedDoc.body.classList.remove('dark');
+
+          // 2. Hapus class 'dark' dari seluruh kontainer laporan
           const reportEl = clonedDoc.getElementById('plagiarism-report-container');
           if (reportEl) {
             reportEl.classList.remove('dark', 'bg-slate-900');
             reportEl.style.backgroundColor = '#ffffff';
             reportEl.style.color = '#0f172a';
             
-            // Pastikan semua elemen teks berubah menjadi gelap di atas kertas putih
-            const darkTextNodes = reportEl.querySelectorAll('.dark\\:text-slate-100, .dark\\:text-slate-200, .dark\\:text-slate-300, .dark\\:text-white');
-            darkTextNodes.forEach(node => {
-              node.style.color = '#0f172a';
-            });
-            
-            // Pastikan semua latar belakang kartu komponen menjadi terang/putih
-            const darkBgNodes = reportEl.querySelectorAll('.dark\\:bg-slate-900, .dark\\:bg-slate-950, .dark\\:bg-slate-950\\/60');
-            darkBgNodes.forEach(node => {
-              node.style.backgroundColor = '#f8fafc';
-              node.style.color = '#0f172a';
-            });
-
-            const darkBorders = reportEl.querySelectorAll('.dark\\:border-slate-800');
-            darkBorders.forEach(node => {
-              node.style.borderColor = '#e2e8f0';
+            // Paksa semua elemen anak memiliki warna latar putih & teks hitam/slate-900
+            const allElements = reportEl.querySelectorAll('*');
+            allElements.forEach(el => {
+              el.classList.remove('dark');
+              
+              // Jika elemen memiliki latar belakang gelap Tailwind, ganti ke terang
+              const computedBg = window.getComputedStyle(el).backgroundColor;
+              if (computedBg.includes('15, 23, 42') || computedBg.includes('2, 6, 23') || computedBg.includes('18, 18, 18')) {
+                el.style.backgroundColor = '#f8fafc';
+              }
+              const computedColor = window.getComputedStyle(el).color;
+              if (computedColor.includes('255, 255, 255') || computedColor.includes('241, 245, 249') || computedColor.includes('226, 232, 240')) {
+                el.style.color = '#0f172a';
+              }
             });
           }
         }

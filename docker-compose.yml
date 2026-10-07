@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - PORT=5000
+      - SUPABASE_URL=https://zzzbxldvlezdwpuhiltd.supabase.co
+      - SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6emJ4bGR2bGV6ZHdwdWhpbHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2Mjk5MTIsImV4cCI6MjA5NTIwNTkxMn0.MrBNFWmABLNftF4iY8ZvjFFJiAIBIyLZujWs6XyD5mo
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6emJ4bGR2bGV6ZHdwdWhpbHRkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTYyOTkxMiwiZXhwIjoyMDk1MjA1OTEyfQ.kOVtI7UJA3Mcpr6OXY07nmfpw5NlVuwoxDiiuoBF0HQ
+      - CELERY_BROKER_URL=rediss://default:gQAAAAAABKe4AAIgcDJhYzdmYzAxNzA1YmU0OWI2OWU5ODk3MmEzMzRjMmNkMw@on-boxer-305080.upstash.io:6379?ssl_cert_reqs=none
+      - CELERY_RESULT_BACKEND=rediss://default:gQAAAAAABKe4AAIgcDJhYzdmYzAxNzA1YmU0OWI2OWU5ODk3MmEzMzRjMmNkMw@on-boxer-305080.upstash.io:6379?ssl_cert_reqs=none
+      - CELERY_ALWAYS_EAGER=True
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

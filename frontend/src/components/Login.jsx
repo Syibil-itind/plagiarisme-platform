@@ -39,7 +39,13 @@ export default function Login({ initialRole = 'mahasiswa', onLoginSuccess, onNav
         body: JSON.stringify({ email: cleanEmail, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "Format respon server tidak valid." };
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Gagal masuk. Silakan periksa kembali kredensial Anda.");

@@ -52,7 +52,13 @@ export default function Register({ initialRole = 'mahasiswa', onRegisterSuccess,
         body: JSON.stringify({ email: cleanEmail, password, fullname: cleanFullname, role }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: "Format respon server tidak valid." };
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Pendaftaran gagal. Silakan coba kembali.");

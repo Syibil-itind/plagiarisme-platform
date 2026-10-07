@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Set CORS headers on Vercel response
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -13,22 +12,26 @@ export default async function handler(req, res) {
   const targetUrl = `https://plagiarisme-platform-production.up.railway.app/api/${targetPath}`;
 
   try {
-    const fetchOptions = {
-      method: req.method,
-      headers: {}
-    };
+    const headers = {};
+    if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
+    if (req.headers['authorization']) headers['authorization'] = req.headers['authorization'];
 
-    if (req.headers['content-type']) fetchOptions.headers['content-type'] = req.headers['content-type'];
-    if (req.headers['authorization']) fetchOptions.headers['authorization'] = req.headers['authorization'];
-
+    let body = undefined;
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
     }
 
-    const response = await fetch(targetUrl, fetchOptions);
-    const data = await response.text();
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: headers,
+      body: body
+    });
 
-    return res.status(response.status).send(data);
+    const contentType = response.headers.get('content-type') || 'application/json';
+    const textData = await response.text();
+
+    res.setHeader('Content-Type', contentType);
+    return res.status(response.status).send(textData || '{}');
   } catch (error) {
     return res.status(500).json({ error: `Proxy Error: ${error.message}` });
   }

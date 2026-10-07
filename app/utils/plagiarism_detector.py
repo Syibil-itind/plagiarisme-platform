@@ -78,10 +78,12 @@ class PlagiarismDetector:
                     
                     avg_sim = (np.mean(max_1) + np.mean(max_2)) / 2.0
                     
-                    if avg_sim < 0.08:
+                    if avg_sim <= 0.05:
                         score = round(avg_sim * 100.0, 1)
+                    elif avg_sim < 0.28:
+                        score = round(5.0 + ((avg_sim - 0.05) / 0.23) * 80.0, 1)
                     else:
-                        score = round(min(100.0, avg_sim * 315.0), 1)
+                        score = round(85.0 + ((avg_sim - 0.28) / 0.72) * 15.0, 1)
 
                 similarity_matrix[i][j] = score
                 similarity_matrix[j][i] = score

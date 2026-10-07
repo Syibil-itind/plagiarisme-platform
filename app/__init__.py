@@ -20,8 +20,8 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Mengaktifkan CORS untuk seluruh endpoint aplikasi agar bisa di-hit dari port 5173
-    CORS(app)
+    # Mengaktifkan CORS secara penuh untuk seluruh origin (Vercel & Localhost)
+    CORS(app, resources={r"/*": {"origins": "*"}})
     
     config_class.init_app(app)
     celery_init_app(app)

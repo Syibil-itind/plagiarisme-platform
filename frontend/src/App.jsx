@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from './config';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -68,7 +69,7 @@ export default function App() {
     if (!assignmentId) return;
     setLoadingSubmissions(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/submissions/assignment/${assignmentId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/assignment/${assignmentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -172,7 +173,7 @@ export default function App() {
       formData.append('files', selectedFiles[0]); // Mahasiswa mengunggah file tunggal
       formData.append('assignment_id', selectedAssignment.id);
 
-      const response = await fetch('http://localhost:5000/api/submissions/submit', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -201,7 +202,7 @@ export default function App() {
     setProgressInfo({ status_message: "Mempersiapkan audit plagiarisme batch kelas..." });
 
     try {
-      const response = await fetch('http://localhost:5000/api/submissions/audit', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/audit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ export default function App() {
 
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/submissions/status/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/submissions/status/${taskId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

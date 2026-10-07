@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 
 export default function ClassManagement({ user, token, onSelectAssignment }) {
   const [classes, setClasses] = useState([]);
@@ -30,7 +31,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/classes', {
+      const response = await fetch(`${API_BASE_URL}/api/classes`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -57,7 +58,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
     setCreatingClass(true);
     try {
-      const response = await fetch('http://localhost:5000/api/classes', {
+      const response = await fetch(`${API_BASE_URL}/api/classes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
     setJoiningClass(true);
     try {
-      const response = await fetch('http://localhost:5000/api/classes/join', {
+      const response = await fetch(`${API_BASE_URL}/api/classes/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +114,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
     setLoadingAssignments(true);
     setAssignments([]);
     try {
-      const response = await fetch(`http://localhost:5000/api/classes/${cls.id}/assignments`, {
+      const response = await fetch(`${API_BASE_URL}/api/classes/${cls.id}/assignments`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -136,7 +137,7 @@ export default function ClassManagement({ user, token, onSelectAssignment }) {
 
     setCreatingAssign(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/classes/${activeClass.id}/assignments`, {
+      const response = await fetch(`${API_BASE_URL}/api/classes/${activeClass.id}/assignments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

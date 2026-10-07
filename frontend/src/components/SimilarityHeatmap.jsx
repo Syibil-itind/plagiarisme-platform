@@ -92,8 +92,12 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     if (!text) return '';
     if (!highlights || highlights.length === 0) return text;
 
+    // Filter highlights berdasarkan toleransi slider jika ada atribut score
+    const validHighlights = highlights.filter(h => h.score === undefined || h.score >= tolerance);
+    if (validHighlights.length === 0) return text;
+
     // Ambil rentang indeks pencocokan diri sendiri
-    const intervals = highlights.map(h => ({
+    const intervals = validHighlights.map(h => ({
       start: h.start_self,
       end: h.end_self
     }));
@@ -120,6 +124,11 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     const result = [];
     let lastIndex = 0;
 
+    const isSemantic = mode === 'semantic';
+    const markStyle = isSemantic
+      ? "bg-sky-500/20 text-sky-950 dark:text-sky-300 border-b-2 border-sky-500 font-semibold px-0.5 rounded transition-all cursor-help"
+      : "bg-amber-500/20 text-amber-950 dark:text-amber-300 border-b-2 border-amber-500 font-semibold px-0.5 rounded transition-all cursor-help";
+
     merged.forEach((interval, idx) => {
       // Teks biasa sebelum bagian yang mirip
       if (interval.start > lastIndex) {
@@ -129,8 +138,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
       result.push(
         <mark 
           key={`m-${idx}`} 
-          className="bg-gold/20 text-yellow-950 dark:text-gold border-b-2 border-gold font-semibold px-0.5 rounded transition-all cursor-help"
-          title="Teks terindikasi mirip dengan dokumen pembanding"
+          className={markStyle}
+          title={isSemantic ? "Teks terindikasi mirip secara semantik (makna)" : "Teks terindikasi mirip secara leksikal (kosakata persis)"}
         >
           {text.substring(interval.start, interval.end)}
         </mark>
@@ -449,7 +458,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold font-mono">Karakter: {selectedPair.textA.length}</span>
                 </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 border-l-gold/75">
+                <div className={`p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 ${mode === 'semantic' ? 'border-l-sky-500' : 'border-l-amber-500'}`}>
                   {renderHighlightedText(
                     selectedPair.textA, 
                     overlapDetails[`${selectedPair.docAIndex}_${selectedPair.docBIndex}`]
@@ -465,7 +474,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold font-mono">Karakter: {selectedPair.textB.length}</span>
                 </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 border-l-gold/75">
+                <div className={`p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 ${mode === 'semantic' ? 'border-l-sky-500' : 'border-l-amber-500'}`}>
                   {renderHighlightedText(
                     selectedPair.textB, 
                     overlapDetails[`${selectedPair.docBIndex}_${selectedPair.docAIndex}`]

@@ -153,8 +153,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
   };
 
   /**
-   * Mengekspor laporan lengkap deteksi plagiarisme akademik menjadi PDF.
-   * Menjamin 100% tampilan Kertas Putih Bersih Resmi Akademik (Light Mode) & Bebas Error oklch.
+   * Mengekspor laporan deteksi plagiarisme menjadi PDF.
+   * (Mengikuti tema aktif: Menghasilkan PDF latar belakang gelap saat Dark Mode aktif)
    */
   const handleExportPDF = async () => {
     const element = document.getElementById('plagiarism-report-container');
@@ -162,78 +162,37 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
 
     setIsExporting(true);
 
-    const wasDark = document.documentElement.classList.contains('dark');
-
     try {
-      if (wasDark) {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
-
-      const exportBtn = document.getElementById('export-pdf-btn');
-      if (exportBtn) exportBtn.style.visibility = 'hidden';
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-
+      const isDarkActive = document.documentElement.classList.contains('dark');
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 2, // Resolusi tinggi
         useCORS: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: isDarkActive ? '#121212' : '#ffffff',
         logging: false,
         onclone: (clonedDoc) => {
-          // Hapus atau ganti semua fungsi warna oklch() di dalam tag <style> agar html2canvas tidak error
+          // Sanitasi tag <style> dari oklch agar html2canvas tidak melempar exception alert
           const styleNodes = clonedDoc.querySelectorAll('style');
           styleNodes.forEach(s => {
             if (s.textContent && s.textContent.includes('oklch')) {
-              s.textContent = s.textContent.replace(/oklch\([^)]+\)/g, '#64748b');
+              s.textContent = s.textContent.replace(/oklch\([^)]+\)/g, '#1e293b');
             }
           });
-
-          clonedDoc.documentElement.classList.remove('dark');
-          clonedDoc.body.classList.remove('dark');
-
-          const reportEl = clonedDoc.getElementById('plagiarism-report-container');
-          if (reportEl) {
-            reportEl.classList.remove('dark', 'bg-slate-900');
-            reportEl.style.backgroundColor = '#ffffff';
-            reportEl.style.color = '#0f172a';
-
-            const allElements = reportEl.querySelectorAll('*');
-            allElements.forEach(el => {
-              el.classList.remove('dark');
-              if (el.style) {
-                if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
-                  el.style.backgroundColor = '#ffffff';
-                }
-                if (el.style.color && el.style.color.includes('oklch')) {
-                  el.style.color = '#0f172a';
-                }
-                if (el.style.borderColor && el.style.borderColor.includes('oklch')) {
-                  el.style.borderColor = '#cbd5e1';
-                }
-              }
-            });
-          }
         }
       });
 
-      if (exportBtn) exportBtn.style.visibility = 'visible';
-      if (wasDark) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      }
-
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 297;
+      const imgWidth = 210; // Lebar kertas A4 dalam mm
+      const pageHeight = 297; // Tinggi kertas A4 dalam mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
+      // Halaman pertama
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
+      // Halaman tambahan
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -244,10 +203,6 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
       const today = new Date().toISOString().split('T')[0];
       pdf.save(`Laporan_Deteksi_Plagiarisme_${today}.pdf`);
     } catch (err) {
-      if (wasDark) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      }
       console.error("Gagal melakukan ekspor PDF:", err);
       alert("Terjadi kesalahan saat meng-generate PDF: " + err.message);
     } finally {

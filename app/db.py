@@ -23,7 +23,9 @@ def get_supabase_admin_client() -> Client:
     """
     if 'supabase_admin' not in g:
         url = current_app.config['SUPABASE_URL']
-        key = current_app.config.get('SUPABASE_SERVICE_ROLE_KEY') or current_app.config['SUPABASE_KEY']
+        key = current_app.config.get('SUPABASE_SERVICE_ROLE_KEY')
+        if not key or not str(key).strip():
+            key = current_app.config['SUPABASE_KEY']
         if not url or not key:
             raise ValueError("Kredensial Supabase tidak ditemukan di konfigurasi Flask!")
         g.supabase_admin = create_client(url, key)

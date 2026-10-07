@@ -13,8 +13,6 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
   const [hoveredCell, setHoveredCell] = useState(null);
   const [selectedPair, setSelectedPair] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
-  // State Slider Toleransi Dinamis (Default: 30%)
-  const [tolerance, setTolerance] = useState(30);
 
   // Efek keyboard untuk menutup modal dengan menekan tombol 'Esc'
   useEffect(() => {
@@ -54,10 +52,10 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     if (i === j) {
       return "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed";
     }
-    if (score < tolerance) {
+    if (score < 30) {
       return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/25 hover:scale-105 transition-all cursor-pointer";
     }
-    if (score >= tolerance && score < Math.min(100, tolerance + 30)) {
+    if (score >= 30 && score < 70) {
       return "bg-gold/15 text-yellow-800 dark:text-gold hover:bg-gold/25 dark:hover:bg-gold/30 hover:scale-105 transition-all cursor-pointer border border-gold/25 dark:border-gold/30";
     }
     return "bg-rose-500 text-white font-bold hover:bg-rose-600 hover:scale-105 transition-all shadow-md shadow-rose-500/10 border-2 border-rose-600 cursor-pointer animate-pulse";
@@ -66,7 +64,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
   // Menangani aksi klik pada salah satu sel heatmap
   const handleCellClick = (i, j, score) => {
     if (i === j) return;
-    
+
     setSelectedPair({
       docAIndex: i,
       docBIndex: j,
@@ -89,15 +87,15 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
    * Fungsi untuk merender teks dengan tag <mark> pada bagian kalimat yang overlap (plagiat).
    * Warna penyorotan dinamis mengikuti tingkat plagiasi kalimat:
    * - Skor >= 70%: MERAH (Plagiasi Tinggi / Bahaya)
-   * - Skor >= tolerance (30%-70%): KUNING/GOLD (Plagiasi Moderat / Waspada)
-   * - Skor < tolerance: TIDAK DI-HIGHLIGHT (Teks biasa / Aman)
+   * - Skor >= 30% dan < 70%: KUNING/GOLD (Plagiasi Moderat / Waspada)
+   * - Skor < 30%: TIDAK DI-HIGHLIGHT (Teks biasa / Aman)
    */
   const renderHighlightedText = (text, highlights = []) => {
     if (!text) return '';
     if (!highlights || highlights.length === 0) return text;
 
-    // Filter highlights: Hanya kalimat yang mempunyai skor >= tolerance yang di-highlight
-    const validHighlights = highlights.filter(h => h.score === undefined || h.score >= tolerance);
+    // Filter highlights: Hanya kalimat yang mempunyai skor >= 30% yang di-highlight
+    const validHighlights = highlights.filter(h => h.score === undefined || h.score >= 30);
     if (validHighlights.length === 0) return text;
 
     // Urutkan rentang berdasarkan indeks mulai
@@ -112,7 +110,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
     let lastIndex = 0;
 
     sorted.forEach((interval, idx) => {
-      // Teks biasa sebelum interval highlight (skor < tolerance)
+      // Teks biasa sebelum interval highlight (skor < 30%)
       if (interval.start > lastIndex) {
         result.push(text.substring(lastIndex, interval.start));
       }
@@ -125,7 +123,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
         // MERAH / BAHAYA (Plagiasi Tinggi >= 70%)
         markStyle = "bg-rose-500/30 text-rose-950 dark:text-rose-200 border-b-2 border-rose-500 font-semibold px-0.5 rounded transition-all cursor-help";
         titleText = `Tingkat Plagiasi Tinggi (${interval.score.toFixed(1)}%)`;
-      } else if (interval.score >= tolerance) {
+      } else if (interval.score >= 30) {
         // KUNING / WASPADA (Plagiasi Moderat 30% - 70%)
         markStyle = "bg-amber-500/30 text-amber-950 dark:text-amber-300 border-b-2 border-amber-500 font-semibold px-0.5 rounded transition-all cursor-help";
         titleText = `Tingkat Plagiasi Moderat (${interval.score.toFixed(1)}%)`;
@@ -134,8 +132,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
       if (markStyle && interval.end > Math.max(lastIndex, interval.start)) {
         const actualStart = Math.max(lastIndex, interval.start);
         result.push(
-          <mark 
-            key={`m-${idx}`} 
+          <mark
+            key={`m-${idx}`}
             className={markStyle}
             title={titleText}
           >
@@ -155,7 +153,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
   };
 
   /**
-   * Mengekspor laporan lengkap deteksi plagiarisme akademik menjadi PDF
+   * Mengekspor laporan lengkap deteksi plagiarisme akademik menjadi PDF.
+   * Menjamin 100% tampilan Kertas Putih Bersih Resmi Akademik (Light Mode) & Bebas Error oklch.
    */
   const handleExportPDF = async () => {
     const element = document.getElementById('plagiarism-report-container');
@@ -163,56 +162,78 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
 
     setIsExporting(true);
 
+    const wasDark = document.documentElement.classList.contains('dark');
+
     try {
+      if (wasDark) {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+
+      const exportBtn = document.getElementById('export-pdf-btn');
+      if (exportBtn) exportBtn.style.visibility = 'hidden';
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       const canvas = await html2canvas(element, {
-        scale: 2, // Resolusi tinggi
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         onclone: (clonedDoc) => {
-          // 1. Hapus class 'dark' dari root html dan body di dokumen klon
+          // Hapus atau ganti semua fungsi warna oklch() di dalam tag <style> agar html2canvas tidak error
+          const styleNodes = clonedDoc.querySelectorAll('style');
+          styleNodes.forEach(s => {
+            if (s.textContent && s.textContent.includes('oklch')) {
+              s.textContent = s.textContent.replace(/oklch\([^)]+\)/g, '#64748b');
+            }
+          });
+
           clonedDoc.documentElement.classList.remove('dark');
           clonedDoc.body.classList.remove('dark');
 
-          // 2. Hapus class 'dark' dari seluruh kontainer laporan
           const reportEl = clonedDoc.getElementById('plagiarism-report-container');
           if (reportEl) {
             reportEl.classList.remove('dark', 'bg-slate-900');
             reportEl.style.backgroundColor = '#ffffff';
             reportEl.style.color = '#0f172a';
-            
-            // Paksa semua elemen anak memiliki warna latar putih & teks hitam/slate-900
+
             const allElements = reportEl.querySelectorAll('*');
             allElements.forEach(el => {
               el.classList.remove('dark');
-              
-              // Jika elemen memiliki latar belakang gelap Tailwind, ganti ke terang
-              const computedBg = window.getComputedStyle(el).backgroundColor;
-              if (computedBg.includes('15, 23, 42') || computedBg.includes('2, 6, 23') || computedBg.includes('18, 18, 18')) {
-                el.style.backgroundColor = '#f8fafc';
-              }
-              const computedColor = window.getComputedStyle(el).color;
-              if (computedColor.includes('255, 255, 255') || computedColor.includes('241, 245, 249') || computedColor.includes('226, 232, 240')) {
-                el.style.color = '#0f172a';
+              if (el.style) {
+                if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
+                  el.style.backgroundColor = '#ffffff';
+                }
+                if (el.style.color && el.style.color.includes('oklch')) {
+                  el.style.color = '#0f172a';
+                }
+                if (el.style.borderColor && el.style.borderColor.includes('oklch')) {
+                  el.style.borderColor = '#cbd5e1';
+                }
               }
             });
           }
         }
       });
 
+      if (exportBtn) exportBtn.style.visibility = 'visible';
+      if (wasDark) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      }
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // Lebar kertas A4 dalam mm
-      const pageHeight = 297; // Tinggi kertas A4 dalam mm
+      const imgWidth = 210;
+      const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Halaman pertama
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Halaman tambahan
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -223,6 +244,10 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
       const today = new Date().toISOString().split('T')[0];
       pdf.save(`Laporan_Deteksi_Plagiarisme_${today}.pdf`);
     } catch (err) {
+      if (wasDark) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      }
       console.error("Gagal melakukan ekspor PDF:", err);
       alert("Terjadi kesalahan saat meng-generate PDF: " + err.message);
     } finally {
@@ -242,10 +267,10 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
 
   return (
     <div className="w-full space-y-8">
-      
+
       {/* KONTINER LAPORAN YANG AKAN DIEKSPOR KE PDF (DUAL-THEME) */}
-      <div 
-        id="plagiarism-report-container" 
+      <div
+        id="plagiarism-report-container"
         className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-2xl rounded-3xl space-y-8 text-slate-850 dark:text-slate-100 transition-all duration-200"
       >
         {/* HEADER PDF PREMIUM */}
@@ -259,7 +284,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
               Tanggal Analisis: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          
+
           {/* Tombol Ekspor PDF */}
           <button
             id="export-pdf-btn"
@@ -287,41 +312,21 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
           </button>
         </div>
 
-        {/* RINGKASAN DATA STATISTIK & SLIDER TOLERANSI DINAMIS */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+        {/* RINGKASAN DATA STATISTIK */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Total Dokumen</span>
             <p className="text-2xl font-black text-slate-850 dark:text-slate-200">{N}</p>
           </div>
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Rata-rata Kemiripan</span>
-            <p className={`text-2xl font-black ${
-              avgScore >= tolerance ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
-            }`}>{avgScore.toFixed(1)}%</p>
+            <p className={`text-2xl font-black ${avgScore >= 30 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}>{avgScore.toFixed(1)}%</p>
           </div>
           <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 transition-colors">
             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Kemiripan Tertinggi</span>
-            <p className={`text-2xl font-black ${
-              maxScore >= tolerance ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
-            }`}>{maxScore.toFixed(1)}%</p>
-          </div>
-          
-          {/* SLIDER TOLERANSI PLAGIARISME DINAMIS */}
-          <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-gold/30 rounded-2xl space-y-2 transition-colors relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-extrabold tracking-wider text-gold">Toleransi Plagiasi</span>
-              <span className="text-xs font-black text-gold font-mono px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-md">{tolerance}%</span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="90"
-              step="5"
-              value={tolerance}
-              onChange={(e) => setTolerance(Number(e.target.value))}
-              className="w-full accent-gold cursor-pointer"
-            />
-            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Geser untuk mengubah ambang batas warna indikator.</p>
+            <p className={`text-2xl font-black ${maxScore >= 30 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}>{maxScore.toFixed(1)}%</p>
           </div>
         </div>
 
@@ -332,7 +337,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
               <h3 className="text-md font-extrabold text-slate-800 dark:text-slate-200">Visual Matriks Heatmap NxN</h3>
               <p className="text-xs text-slate-500 font-medium">Klik pada sel persentase (sel berwarna merah/kuning) untuk meninjau secara bersisian.</p>
             </div>
-            
+
             {/* Legenda Indikator Warna */}
             <div className="flex items-center space-x-3 text-[10px] font-bold">
               <span className="text-slate-550 dark:text-slate-550">Indikator:</span>
@@ -360,8 +365,8 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                     Berkas
                   </th>
                   {matrix.map((_, idx) => (
-                    <th 
-                      key={idx} 
+                    <th
+                      key={idx}
                       className="p-3 bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-[10px] font-extrabold text-slate-650 dark:text-slate-400 text-center w-24"
                       title={getFileName(idx)}
                     >
@@ -374,22 +379,21 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                 {matrix.map((row, i) => (
                   <tr key={i} className="group hover:bg-slate-100 dark:hover:bg-slate-850/30 transition-colors">
                     {/* Label Baris Utama */}
-                    <td 
+                    <td
                       className="p-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-[10px] font-extrabold text-slate-650 dark:text-slate-400 text-center"
                       title={getFileName(i)}
                     >
                       {truncateString(getFileName(i))}
                     </td>
-                    
+
                     {/* Sel Nilai Matriks */}
                     {row.map((score, j) => {
                       const isHovered = hoveredCell && (hoveredCell.i === i || hoveredCell.j === j);
                       return (
                         <td
                           key={j}
-                          className={`p-1 border border-slate-200 dark:border-slate-800 text-center font-mono text-xs relative transition-all duration-150 ${
-                            isHovered ? "bg-slate-100 dark:bg-slate-850/40" : ""
-                          }`}
+                          className={`p-1 border border-slate-200 dark:border-slate-800 text-center font-mono text-xs relative transition-all duration-150 ${isHovered ? "bg-slate-100 dark:bg-slate-850/40" : ""
+                            }`}
                           onMouseEnter={() => setHoveredCell({ i, j, score })}
                           onMouseLeave={() => setHoveredCell(null)}
                           onClick={() => handleCellClick(i, j, score)}
@@ -412,7 +416,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
         </div>
 
         {/* DYNAMIC TOOLTIP / STATUS BAR */}
-        <div 
+        <div
           data-html2canvas-ignore="true"
           className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-500 transition-colors"
         >
@@ -420,10 +424,9 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
             <p>
               Menyorot: <span className="font-bold text-slate-700 dark:text-slate-350">{truncateString(getFileName(hoveredCell.i))}</span> &rarr;{" "}
               <span className="font-bold text-slate-700 dark:text-slate-350">{truncateString(getFileName(hoveredCell.j))}</span> :{" "}
-              <span className={`font-extrabold px-2 py-0.5 rounded-md ${
-                hoveredCell.score >= 70 ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" : 
-                hoveredCell.score >= 30 ? "bg-gold/10 text-yellow-800 dark:text-gold border border-gold/20 dark:border-gold/30" : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-              }`}>{hoveredCell.score.toFixed(1)}% Kemiripan</span>
+              <span className={`font-extrabold px-2 py-0.5 rounded-md ${hoveredCell.score >= 70 ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300" :
+                  hoveredCell.score >= 30 ? "bg-gold/10 text-yellow-800 dark:text-gold border border-gold/20 dark:border-gold/30" : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                }`}>{hoveredCell.score.toFixed(1)}% Kemiripan</span>
             </p>
           ) : (
             <p>Arahkan kursor ke atas sel untuk melihat detail cepat perbandingan berpasangan. Klik sel untuk membuka dialog bersisian.</p>
@@ -434,11 +437,11 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
 
       {/* OVERLAY DIALOG/MODAL BERSKALA BESAR (SIDE-BY-SIDE HIGHLIGHTING) */}
       {selectedPair && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/80 backdrop-blur-sm animate-fadeIn"
           onClick={() => setSelectedPair(null)} // Klik backdrop untuk menutup modal
         >
-          <div 
+          <div
             className="w-full max-w-6xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto relative animate-scaleUp text-slate-800 dark:text-slate-100 transition-colors"
             onClick={(e) => e.stopPropagation()} // Mencegah klik di dalam modal menutup modal
           >
@@ -450,11 +453,10 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                 </span>
                 <h4 className="text-lg font-black text-slate-950 dark:text-white flex items-center gap-2 mt-1">
                   <span>Pemeriksa Kemiripan Bersisian (Side-by-Side)</span>
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-extrabold border ${
-                    selectedPair.score >= 70 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 dark:border-rose-500/30 animate-pulse" : 
-                    selectedPair.score >= 30 ? "bg-gold/10 text-yellow-800 dark:text-gold border-gold/20 dark:border-gold/30" : 
-                    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30"
-                  }`}>
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-extrabold border ${selectedPair.score >= 70 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 dark:border-rose-500/30 animate-pulse" :
+                      selectedPair.score >= 30 ? "bg-gold/10 text-yellow-800 dark:text-gold border-gold/20 dark:border-gold/30" :
+                        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30"
+                    }`}>
                     {selectedPair.score.toFixed(1)}% Tingkat Plagiasi
                   </span>
                 </h4>
@@ -462,7 +464,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                   Membandingkan secara otomatis kalimat yang memiliki padanan makna tinggi antara kedua dokumen terpilih:
                 </p>
               </div>
-              
+
               {/* Tombol Tutup Panel Silang (X) */}
               <button
                 onClick={() => setSelectedPair(null)}
@@ -487,7 +489,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                 </div>
                 <div className={`p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 ${mode === 'semantic' ? 'border-l-sky-500' : 'border-l-amber-500'}`}>
                   {renderHighlightedText(
-                    selectedPair.textA, 
+                    selectedPair.textA,
                     overlapDetails[`${selectedPair.docAIndex}_${selectedPair.docBIndex}`]
                   )}
                 </div>
@@ -503,13 +505,13 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
                 </div>
                 <div className={`p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-normal h-[350px] overflow-y-auto whitespace-pre-wrap selection:bg-gold selection:text-charcoal border-l-4 ${mode === 'semantic' ? 'border-l-sky-500' : 'border-l-amber-500'}`}>
                   {renderHighlightedText(
-                    selectedPair.textB, 
+                    selectedPair.textB,
                     overlapDetails[`${selectedPair.docBIndex}_${selectedPair.docAIndex}`]
                   )}
                 </div>
               </div>
             </div>
-            
+
             {/* Footer Panel Rekomendasi Audit & Tombol Tutup */}
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-4">
               {selectedPair.score >= 70 ? (

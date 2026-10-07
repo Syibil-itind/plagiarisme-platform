@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
  * dalam bentuk Heatmap interaktif dan menyediakan fitur penyorotan teks (highlighting) side-by-side
  * berbentuk overlay modal berskala besar serta ekspor laporan PDF resmi akademik.
  */
-export default function SimilarityHeatmap({ matrix, documents, filenames = [], overlapDetails = {} }) {
+export default function SimilarityHeatmap({ matrix, documents, filenames = [], overlapDetails = {}, mode = 'semantic' }) {
   const [hoveredCell, setHoveredCell] = useState(null);
   const [selectedPair, setSelectedPair] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -410,7 +410,7 @@ export default function SimilarityHeatmap({ matrix, documents, filenames = [], o
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div className="space-y-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gold bg-gold/10 border border-gold/25 px-2.5 py-0.5 rounded-full">
-                  Analisis Komparasi Kalimat Semantik (BERT)
+                  {mode === 'semantic' ? 'Analisis Komparasi Kalimat Semantik (Konteks & Parafrase)' : 'Analisis Komparasi Kosakata Leksikal (TF-IDF & Kata Persis)'}
                 </span>
                 <h4 className="text-lg font-black text-slate-950 dark:text-white flex items-center gap-2 mt-1">
                   <span>Pemeriksa Kemiripan Bersisian (Side-by-Side)</span>

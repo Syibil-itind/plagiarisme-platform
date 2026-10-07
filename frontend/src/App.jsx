@@ -684,6 +684,7 @@ export default function App() {
                 </div>
 
                 <SimilarityHeatmap
+                  mode={selectedTab}
                   matrix={selectedTab === 'semantic' ? resultData.results.semantic_similarity : resultData.results.tfidf_similarity}
                   documents={resultData.results.original_documents || resultData.results.preprocessed_documents}
                   filenames={uploadedFilenames}

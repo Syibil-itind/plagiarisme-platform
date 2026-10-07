@@ -30,8 +30,14 @@ class PlagiarismDetector:
         # Menginisialisasi objek stemmer untuk mengubah kata berimbuhan menjadi kata dasar
         self.stemmer = stemmer_factory.create_stemmer()
         
-        # Memuat pre-trained model SentenceTransformer multilingual untuk kemiripan semantik
-        self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        # Lazy-loaded model property to keep app startup lightweight
+        self._model = None
+
+    @property
+    def model(self):
+        if self._model is None:
+            self._model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        return self._model
 
     # Fungsi pembantu untuk memproses satu dokumen teks tunggal bahasa Indonesia
     def preprocess_text(self, text):

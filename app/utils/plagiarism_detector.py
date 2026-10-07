@@ -109,7 +109,7 @@ class PlagiarismDetector:
                 all_sentences.append(sent["text"])
                 sentence_map.append((d_idx, s_idx))
                 
-        if not all_sentences:
+        if not all_sentences or not self.model or self.model is False:
             return {}
             
         # Kalkulasi embeddings untuk seluruh kalimat

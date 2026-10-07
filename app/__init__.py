@@ -20,8 +20,8 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Mengaktifkan CORS secara penuh untuk seluruh origin (Vercel & Localhost)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # Mengaktifkan CORS secara penuh untuk seluruh origin, methods, dan headers (Vercel & Localhost)
+    CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
     
     config_class.init_app(app)
     celery_init_app(app)

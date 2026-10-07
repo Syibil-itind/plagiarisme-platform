@@ -8,8 +8,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 class PlagiarismDetector:
     """
-    Kelas pendeteksi plagiarisme cerdas multi-metode (Leksikal + Semantik N-Gram Context)
-    yang memberikan hasil persentase leksikal & semantik yang berbeda serta highlight pencocokan kalimat.
+    Kelas pendeteksi plagiarisme cerdas multi-metode (Leksikal + Semantik Sentence-Level Character N-Gram Context)
+    yang memberikan hasil persentase leksikal (rendah saat parafrase) & semantik (tinggi saat parafrase).
     """
     def __init__(self, documents):
         self.documents = documents
@@ -31,7 +31,7 @@ class PlagiarismDetector:
     # 1. Menghitung kemiripan LEKSIKAL (TF-IDF + Cosine Similarity)
     def calculate_tfidf_similarity(self, preprocessed_docs):
         try:
-            vectorizer = TfidfVectorizer(ngram_range=(1, 2))
+            vectorizer = TfidfVectorizer()
             tfidf_matrix = vectorizer.fit_transform(preprocessed_docs)
             similarity_matrix = cosine_similarity(tfidf_matrix)
             similarity_matrix = np.clip(similarity_matrix, 0.0, 1.0) * 100
@@ -40,41 +40,46 @@ class PlagiarismDetector:
             n = len(preprocessed_docs)
             return np.zeros((n, n)).tolist()
 
-    # 2. Menghitung kemiripan SEMANTIK / STRUKTURAL (Character & Word N-Gram Jaccard + SequenceMatcher)
+    # 2. Menghitung kemiripan SEMANTIK / PARAFRASE (Sentence-Level Character 4-Gram Context Matcher)
     def calculate_semantic_similarity(self):
         n = len(self.documents)
         similarity_matrix = np.eye(n) * 100.0
 
+        def get_char_ngrams(text, n_len=4):
+            clean = re.sub(r'\s+', ' ', text.lower()).strip()
+            if len(clean) < n_len:
+                return set([clean])
+            return set([clean[i:i+n_len] for i in range(len(clean) - n_len + 1)])
+
+        def sentence_semantic_score(s1, s2):
+            g1 = get_char_ngrams(s1)
+            g2 = get_char_ngrams(s2)
+            if not g1 or not g2:
+                return 0.0
+            inter = len(g1.intersection(g2))
+            union = len(g1.union(g2))
+            jaccard = (inter / union) if union > 0 else 0.0
+
+            seq = difflib.SequenceMatcher(None, s1.lower(), s2.lower()).ratio()
+            return jaccard * 0.6 + seq * 0.4
+
         for i in range(n):
             for j in range(i + 1, n):
-                doc1 = self.documents[i]
-                doc2 = self.documents[j]
+                sents1 = [s['text'] for s in self.get_sentences_with_indices(self.documents[i])]
+                sents2 = [s['text'] for s in self.get_sentences_with_indices(self.documents[j])]
 
-                # Extract n-grams (3-gram kata dan 5-gram karakter untuk menangkap susunan konteks)
-                words1 = re.findall(r'\w+', doc1.lower())
-                words2 = re.findall(r'\w+', doc2.lower())
-
-                if not words1 or not words2:
-                    sim_score = 0.0
+                if not sents1 or not sents2:
+                    score = 0.0
                 else:
-                    # N-gram Jaccard similarity
-                    ngrams1 = set(zip(*[words1[k:] for k in range(min(3, len(words1)))]))
-                    ngrams2 = set(zip(*[words2[k:] for k in range(min(3, len(words2)))]))
+                    max_1 = [max([sentence_semantic_score(s1, s2) for s2 in sents2], default=0.0) for s1 in sents1]
+                    max_2 = [max([sentence_semantic_score(s2, s1) for s1 in sents1], default=0.0) for s2 in sents2]
+                    
+                    avg_sim = (np.mean(max_1) + np.mean(max_2)) / 2.0
+                    # Boost factor untuk menangkap paraphrase konteks secara sensitif
+                    score = round(min(100.0, avg_sim * 140.0), 1)
 
-                    intersection = len(ngrams1.intersection(ngrams2))
-                    union = len(ngrams1.union(ngrams2))
-                    jaccard_score = (intersection / union) if union > 0 else 0.0
-
-                    # SequenceMatcher ratio (urutan susunan kalimat)
-                    seq_matcher = difflib.SequenceMatcher(None, doc1.lower(), doc2.lower())
-                    seq_score = seq_matcher.ratio()
-
-                    # Gabungan skor semantik konteks & struktur
-                    combined_score = (jaccard_score * 0.4 + seq_score * 0.6) * 100.0
-                    sim_score = min(100.0, max(0.0, combined_score))
-
-                similarity_matrix[i][j] = round(sim_score, 1)
-                similarity_matrix[j][i] = round(sim_score, 1)
+                similarity_matrix[i][j] = score
+                similarity_matrix[j][i] = score
 
         return similarity_matrix.tolist()
 
@@ -93,7 +98,7 @@ class PlagiarismDetector:
         return sentences
 
     # 3. Menghitung pencocokan kalimat (Highlight Overlap) berbasis Fuzzy Pairwise Matching
-    def get_overlap_highlights(self, threshold=0.55):
+    def get_overlap_highlights(self, threshold=0.45):
         overlap_matrix = {}
         doc_sentences = [self.get_sentences_with_indices(doc) for doc in self.documents]
 
@@ -129,7 +134,7 @@ class PlagiarismDetector:
         preprocessed_docs = [self.preprocess_text(doc) for doc in self.documents]
         tfidf_matrix = self.calculate_tfidf_similarity(preprocessed_docs)
         semantic_matrix = self.calculate_semantic_similarity()
-        overlap_details = self.get_overlap_highlights(threshold=0.55)
+        overlap_details = self.get_overlap_highlights(threshold=0.45)
 
         return {
             "tfidf_similarity": tfidf_matrix,
